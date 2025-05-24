@@ -12,6 +12,8 @@ import { MatBadgeModule } from '@angular/material/badge';
 import { MatTabsModule, MatTabGroup } from '@angular/material/tabs';
 import { MatDividerModule } from '@angular/material/divider';
 
+import { NotificationPanelComponent } from '../notification-panel/notification-panel.component';
+
 import { User } from '../../models/user.model';
 import { CashRequest, RequestStatus } from '../../models/cash-request.model';
 import { Notification } from '../../models/notification.model';
@@ -33,7 +35,8 @@ import { NotificationService } from '../../services/notification.service';
     MatMenuModule,
     MatBadgeModule,
     MatTabsModule,
-    MatDividerModule
+    MatDividerModule,
+    NotificationPanelComponent
   ],
   templateUrl: './issuer-dashboard.component.html',
   styleUrl: './issuer-dashboard.component.scss'
@@ -158,6 +161,13 @@ export class IssuerDashboardComponent implements OnInit {
     if (this.currentUser) {
       this.notificationService.markAllAsReadForUser(this.currentUser.id);
       this.unreadNotificationCount = 0;
+    }
+  }
+
+  onNotificationClick(notification: Notification): void {
+    // Navigate to request details if notification has requestId
+    if (notification.requestId) {
+      this.router.navigate(['/request-details', notification.requestId]);
     }
   }
 

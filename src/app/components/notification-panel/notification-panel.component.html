@@ -1,0 +1,109 @@
+<!-- Notification Button -->
+<button
+  mat-icon-button
+  [matMenuTriggerFor]="notificationMenu"
+  (click)="onMarkAllAsRead()"
+  matTooltip="Notifications"
+  class="notification-trigger">
+  <mat-icon
+    [matBadge]="unreadCount"
+    [matBadgeHidden]="unreadCount === 0"
+    matBadgeColor="warn"
+    matBadgeSize="small">
+    notifications
+  </mat-icon>
+</button>
+
+<!-- Enhanced Notification Menu -->
+<mat-menu #notificationMenu="matMenu" class="notification-menu" xPosition="before" [overlapTrigger]="false">
+  <!-- Header -->
+  <div class="notification-header" (click)="$event.stopPropagation()">
+    <div class="header-content">
+      <h3>Notifications</h3>
+      <div class="header-actions" *ngIf="hasNotifications()">
+        <button
+          mat-icon-button
+          (click)="clearAllNotifications()"
+          matTooltip="Clear all notifications"
+          class="clear-all-btn">
+          <mat-icon>clear_all</mat-icon>
+        </button>
+      </div>
+    </div>
+    <div class="notification-count" *ngIf="hasNotifications()">
+      {{ notifications.length }} notification{{ notifications.length !== 1 ? 's' : '' }}
+      <span *ngIf="unreadCount > 0" class="unread-count">
+        ({{ unreadCount }} unread)
+      </span>
+    </div>
+  </div>
+
+  <!-- Notification List -->
+  <div class="notification-list" *ngIf="hasNotifications(); else noNotifications">
+    <div
+      *ngFor="let notification of getDisplayNotifications(); trackBy: trackByNotificationId"
+      class="notification-item"
+      [class.unread]="!notification.isRead"
+      (click)="onNotificationClick(notification)"
+      matRipple>
+
+      <!-- Notification Icon -->
+      <div class="notification-icon">
+        <mat-icon
+          [color]="getNotificationColor(notification.type)"
+          [class.unread-icon]="!notification.isRead">
+          {{ getNotificationIcon(notification.type) }}
+        </mat-icon>
+      </div>
+
+      <!-- Notification Content -->
+      <div class="notification-content">
+        <div class="notification-title">
+          {{ notification.title }}
+          <span *ngIf="!notification.isRead" class="unread-indicator"></span>
+        </div>
+        <div class="notification-message">
+          {{ notification.message }}
+        </div>
+        <div class="notification-meta">
+          <span class="notification-time">
+            {{ getTimeAgo(notification.createdAt) }}
+          </span>
+          <span class="notification-type">
+            {{ getNotificationTypeLabel(notification.type) }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Delete Button -->
+      <div class="notification-actions">
+        <button
+          mat-icon-button
+          (click)="deleteNotification($event, notification)"
+          matTooltip="Delete notification"
+          class="delete-btn">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+    </div>
+
+    <!-- Show More Link -->
+    <div class="show-more" *ngIf="notifications.length > 10" (click)="$event.stopPropagation()">
+      <button mat-button color="primary" class="show-more-btn">
+        <mat-icon>expand_more</mat-icon>
+        View {{ notifications.length - 10 }} more notifications
+      </button>
+    </div>
+  </div>
+
+  <!-- No Notifications State -->
+  <ng-template #noNotifications>
+    <div class="no-notifications">
+      <mat-icon>notifications_none</mat-icon>
+      <p>No notifications yet</p>
+      <span class="no-notifications-subtitle">
+        You'll see updates about your cash requests here
+      </span>
+    </div>
+  </ng-template>
+</mat-menu>

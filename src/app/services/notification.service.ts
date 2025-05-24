@@ -10,21 +10,34 @@ import { UserService } from './user.service';
 })
 export class NotificationService {
   private readonly NOTIFICATIONS_KEY = 'cash_mgmt_notifications';
-  
+  private readonly DELETED_NOTIFICATIONS_KEY = 'cash_mgmt_deleted_notifications';
+
   private notificationsSubject = new BehaviorSubject<Notification[]>([]);
   public notifications$ = this.notificationsSubject.asObservable();
+
+  private deletedNotifications: Notification[] = [];
+  private undoTimers: Map<string, any> = new Map();
 
   constructor(
     private localStorageService: LocalStorageService,
     private userService: UserService
   ) {
     this.loadNotifications();
+    this.loadDeletedNotifications();
     this.checkScheduledNotifications();
   }
 
   private loadNotifications(): void {
     const notifications = this.getAllNotifications();
     this.notificationsSubject.next(notifications);
+  }
+
+  private loadDeletedNotifications(): void {
+    this.deletedNotifications = this.localStorageService.getItem<Notification[]>(this.DELETED_NOTIFICATIONS_KEY) || [];
+  }
+
+  private saveDeletedNotifications(): void {
+    this.localStorageService.setItem(this.DELETED_NOTIFICATIONS_KEY, this.deletedNotifications);
   }
 
   private generateId(): string {
@@ -69,7 +82,7 @@ export class NotificationService {
   markAsRead(notificationId: string): void {
     const notifications = this.getAllNotifications();
     const notification = notifications.find(n => n.id === notificationId);
-    
+
     if (notification) {
       notification.isRead = true;
       this.saveNotifications(notifications);
@@ -79,18 +92,147 @@ export class NotificationService {
   markAllAsReadForUser(userId: string): void {
     const notifications = this.getAllNotifications();
     const userNotifications = notifications.filter(n => n.recipientId === userId);
-    
+
     userNotifications.forEach(notification => {
       notification.isRead = true;
     });
-    
+
     this.saveNotifications(notifications);
+  }
+
+  deleteNotification(notificationId: string): { success: boolean; notification?: Notification } {
+    const notifications = this.getAllNotifications();
+    const notificationIndex = notifications.findIndex(n => n.id === notificationId);
+
+    if (notificationIndex === -1) {
+      return { success: false };
+    }
+
+    const deletedNotification = notifications[notificationIndex];
+
+    // Remove from active notifications
+    notifications.splice(notificationIndex, 1);
+    this.saveNotifications(notifications);
+
+    // Add to deleted notifications for undo functionality
+    this.deletedNotifications.push(deletedNotification);
+    this.saveDeletedNotifications();
+
+    // Set up auto-permanent delete after 3 seconds
+    const timer = setTimeout(() => {
+      this.permanentlyDeleteNotification(notificationId);
+    }, 3000);
+
+    this.undoTimers.set(notificationId, timer);
+
+    return { success: true, notification: deletedNotification };
+  }
+
+  undoDeleteNotification(notificationId: string): boolean {
+    // Clear the timer
+    const timer = this.undoTimers.get(notificationId);
+    if (timer) {
+      clearTimeout(timer);
+      this.undoTimers.delete(notificationId);
+    }
+
+    // Find the notification in deleted notifications
+    const deletedIndex = this.deletedNotifications.findIndex(n => n.id === notificationId);
+    if (deletedIndex === -1) {
+      return false;
+    }
+
+    const notification = this.deletedNotifications[deletedIndex];
+
+    // Remove from deleted notifications
+    this.deletedNotifications.splice(deletedIndex, 1);
+    this.saveDeletedNotifications();
+
+    // Add back to active notifications
+    const notifications = this.getAllNotifications();
+    notifications.push(notification);
+    this.saveNotifications(notifications);
+
+    return true;
+  }
+
+  private permanentlyDeleteNotification(notificationId: string): void {
+    const deletedIndex = this.deletedNotifications.findIndex(n => n.id === notificationId);
+    if (deletedIndex !== -1) {
+      this.deletedNotifications.splice(deletedIndex, 1);
+      this.saveDeletedNotifications();
+    }
+    this.undoTimers.delete(notificationId);
+  }
+
+  clearAllNotificationsForUser(userId: string): { success: boolean; deletedCount: number; notifications: Notification[] } {
+    const notifications = this.getAllNotifications();
+    const userNotifications = notifications.filter(n => n.recipientId === userId);
+    const otherNotifications = notifications.filter(n => n.recipientId !== userId);
+
+    if (userNotifications.length === 0) {
+      return { success: false, deletedCount: 0, notifications: [] };
+    }
+
+    // Save only non-user notifications
+    this.saveNotifications(otherNotifications);
+
+    // Add user notifications to deleted for undo functionality
+    userNotifications.forEach(notification => {
+      this.deletedNotifications.push(notification);
+
+      // Set up auto-permanent delete after 3 seconds
+      const timer = setTimeout(() => {
+        this.permanentlyDeleteNotification(notification.id);
+      }, 3000);
+
+      this.undoTimers.set(notification.id, timer);
+    });
+
+    this.saveDeletedNotifications();
+
+    return {
+      success: true,
+      deletedCount: userNotifications.length,
+      notifications: userNotifications
+    };
+  }
+
+  undoClearAllNotifications(notifications: Notification[]): boolean {
+    if (!notifications || notifications.length === 0) {
+      return false;
+    }
+
+    // Clear all timers for these notifications
+    notifications.forEach(notification => {
+      const timer = this.undoTimers.get(notification.id);
+      if (timer) {
+        clearTimeout(timer);
+        this.undoTimers.delete(notification.id);
+      }
+    });
+
+    // Remove from deleted notifications
+    notifications.forEach(notification => {
+      const deletedIndex = this.deletedNotifications.findIndex(n => n.id === notification.id);
+      if (deletedIndex !== -1) {
+        this.deletedNotifications.splice(deletedIndex, 1);
+      }
+    });
+    this.saveDeletedNotifications();
+
+    // Add back to active notifications
+    const activeNotifications = this.getAllNotifications();
+    activeNotifications.push(...notifications);
+    this.saveNotifications(activeNotifications);
+
+    return true;
   }
 
   // Specific notification methods for cash management
   notifyNewRequest(request: CashRequest): void {
     const issuers = this.userService.getIssuers();
-    
+
     issuers.forEach(issuer => {
       this.createNotification({
         type: NotificationType.NEW_REQUEST,
@@ -127,7 +269,7 @@ export class NotificationService {
 
     // Schedule reminder 30 minutes before return deadline
     const reminderTime = new Date(request.expectedReturnDate.getTime() - (30 * 60 * 1000));
-    
+
     // Only schedule if reminder time is in the future
     if (reminderTime > new Date()) {
       // Notify requester
@@ -187,10 +329,10 @@ export class NotificationService {
     setInterval(() => {
       const now = new Date();
       const notifications = this.getAllNotifications();
-      
+
       notifications.forEach(notification => {
-        if (notification.scheduledFor && 
-            notification.scheduledFor <= now && 
+        if (notification.scheduledFor &&
+            notification.scheduledFor <= now &&
             !notification.isRead) {
           // This notification should be "delivered" now
           // In a real app, this would trigger an actual notification

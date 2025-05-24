@@ -11,12 +11,14 @@
       <mat-icon>refresh</mat-icon>
     </button>
 
-    <!-- Notifications -->
-    <button mat-icon-button [matMenuTriggerFor]="notificationMenu" (click)="markNotificationsAsRead()">
-      <mat-icon [matBadge]="unreadNotificationCount" [matBadgeHidden]="unreadNotificationCount === 0" matBadgeColor="warn">
-        notifications
-      </mat-icon>
-    </button>
+    <!-- Enhanced Notifications -->
+    <app-notification-panel
+      [notifications]="notifications"
+      [unreadCount]="unreadNotificationCount"
+      [userId]="currentUser?.id || ''"
+      (notificationClick)="onNotificationClick($event)"
+      (markAllAsRead)="markNotificationsAsRead()">
+    </app-notification-panel>
 
     <!-- User Menu -->
     <button mat-icon-button [matMenuTriggerFor]="userMenu">
@@ -288,28 +290,7 @@
   </div>
 </div>
 
-<!-- Notification Menu -->
-<mat-menu #notificationMenu="matMenu" class="notification-menu">
-  <div class="notification-header">
-    <h3>Notifications</h3>
-  </div>
-  <div class="notification-list" *ngIf="notifications.length > 0; else noNotifications">
-    <button mat-menu-item *ngFor="let notification of notifications.slice(0, 5)" class="notification-item">
-      <mat-icon [color]="notification.isRead ? '' : 'primary'">{{ notification.type === 'new_request' ? 'mail' : 'info' }}</mat-icon>
-      <div class="notification-content">
-        <div class="notification-title">{{ notification.title }}</div>
-        <div class="notification-message">{{ notification.message }}</div>
-        <div class="notification-time">{{ notification.createdAt | date:'short' }}</div>
-      </div>
-    </button>
-  </div>
-  <ng-template #noNotifications>
-    <div class="no-notifications">
-      <mat-icon>notifications_none</mat-icon>
-      <p>No notifications</p>
-    </div>
-  </ng-template>
-</mat-menu>
+
 
 <!-- User Menu -->
 <mat-menu #userMenu="matMenu">
