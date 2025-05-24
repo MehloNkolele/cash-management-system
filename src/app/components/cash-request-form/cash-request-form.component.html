@@ -1,0 +1,162 @@
+<div class="form-container">
+  <!-- Toolbar -->
+  <mat-toolbar color="primary" class="app-toolbar">
+    <button mat-icon-button (click)="goBack()">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <span class="toolbar-title">New Cash Request</span>
+    
+    <span class="toolbar-spacer"></span>
+    
+    <!-- User Menu -->
+    <button mat-icon-button [matMenuTriggerFor]="userMenu">
+      <mat-icon>account_circle</mat-icon>
+    </button>
+  </mat-toolbar>
+
+  <!-- Form Content -->
+  <div class="form-content">
+    <mat-card class="form-card">
+      <mat-card-header>
+        <mat-card-title>Alternative Channels - Cash Management System</mat-card-title>
+        <mat-card-subtitle>Submit a new cash request for testing purposes</mat-card-subtitle>
+      </mat-card-header>
+
+      <mat-card-content>
+        <form (ngSubmit)="onSubmit()" #requestForm="ngForm">
+          <!-- Requester Information -->
+          <div class="form-section">
+            <h3>Requester Information</h3>
+            <div class="form-row">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Requester Name</mat-label>
+                <input matInput [value]="currentUser?.fullName" readonly>
+              </mat-form-field>
+            </div>
+            
+            <div class="form-row">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Department</mat-label>
+                <mat-select [(ngModel)]="selectedDepartment" name="department" required>
+                  <mat-option *ngFor="let dept of departments" [value]="dept.name">
+                    {{ dept.name }}
+                  </mat-option>
+                </mat-select>
+              </mat-form-field>
+            </div>
+          </div>
+
+          <!-- Cash Requirements -->
+          <div class="form-section">
+            <h3>Bank Note Denomination and Quantity</h3>
+            <div class="denominations-grid">
+              <div *ngFor="let denom of denominations" class="denomination-item">
+                <mat-form-field appearance="outline">
+                  <mat-label>{{ denom.label }}</mat-label>
+                  <input 
+                    matInput 
+                    type="number" 
+                    min="0" 
+                    [value]="getQuantity(denom.value)"
+                    (input)="updateQuantity(denom.value, +$any($event.target).value)"
+                    placeholder="0">
+                </mat-form-field>
+                <div class="denomination-total">
+                  {{ formatCurrency(denom.value * getQuantity(denom.value)) }}
+                </div>
+              </div>
+            </div>
+            
+            <div class="total-section">
+              <mat-card class="total-card">
+                <mat-card-content>
+                  <div class="total-display">
+                    <span class="total-label">Total Amount:</span>
+                    <span class="total-amount">{{ formatCurrency(calculateTotal()) }}</span>
+                  </div>
+                </mat-card-content>
+              </mat-card>
+            </div>
+          </div>
+
+          <!-- Request Details -->
+          <div class="form-section">
+            <h3>Request Details</h3>
+            <div class="form-row">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Date and Time Requested</mat-label>
+                <input matInput [matDatepicker]="picker" [(ngModel)]="dateRequested" name="dateRequested" required>
+                <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+                <mat-datepicker #picker></mat-datepicker>
+              </mat-form-field>
+            </div>
+            
+            <div class="form-row">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Comments (Optional)</mat-label>
+                <textarea 
+                  matInput 
+                  [(ngModel)]="comments" 
+                  name="comments"
+                  rows="3"
+                  placeholder="Any additional information or special requirements...">
+                </textarea>
+              </mat-form-field>
+            </div>
+          </div>
+
+          <!-- Summary Section -->
+          <div class="form-section" *ngIf="getSelectedNotes().length > 0">
+            <h3>Request Summary</h3>
+            <mat-card class="summary-card">
+              <mat-card-content>
+                <div class="summary-item" *ngFor="let note of getSelectedNotes()">
+                  <span class="note-info">{{ note.quantity }}x R{{ note.denomination }}</span>
+                  <span class="note-total">{{ formatCurrency(note.denomination * note.quantity) }}</span>
+                </div>
+                <mat-divider></mat-divider>
+                <div class="summary-total">
+                  <span class="total-label">Total:</span>
+                  <span class="total-amount">{{ formatCurrency(calculateTotal()) }}</span>
+                </div>
+              </mat-card-content>
+            </mat-card>
+          </div>
+
+          <!-- Form Actions -->
+          <div class="form-actions">
+            <button mat-button type="button" (click)="onCancel()">
+              <mat-icon>cancel</mat-icon>
+              Cancel
+            </button>
+            <button 
+              mat-raised-button 
+              color="primary" 
+              type="submit" 
+              [disabled]="!isFormValid()">
+              <mat-icon>send</mat-icon>
+              Submit Request
+            </button>
+          </div>
+        </form>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>
+
+<!-- User Menu -->
+<mat-menu #userMenu="matMenu">
+  <button mat-menu-item>
+    <mat-icon>person</mat-icon>
+    <span>{{ currentUser?.fullName }}</span>
+  </button>
+  <button mat-menu-item>
+    <mat-icon>business</mat-icon>
+    <span>{{ currentUser?.department }}</span>
+  </button>
+  <mat-divider></mat-divider>
+  <button mat-menu-item (click)="goBack()">
+    <mat-icon>dashboard</mat-icon>
+    <span>Dashboard</span>
+  </button>
+</mat-menu>

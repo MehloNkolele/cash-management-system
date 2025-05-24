@@ -1,0 +1,230 @@
+<div class="request-details-container" *ngIf="request">
+  <!-- Toolbar -->
+  <mat-toolbar color="primary" class="app-toolbar">
+    <button mat-icon-button (click)="goBack()">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <span class="toolbar-title">Request Details - {{ request.id.substring(0, 8) }}...</span>
+
+    <span class="toolbar-spacer"></span>
+
+    <!-- User Menu -->
+    <button mat-icon-button [matMenuTriggerFor]="userMenu">
+      <mat-icon>account_circle</mat-icon>
+    </button>
+  </mat-toolbar>
+
+  <!-- Main Content -->
+  <div class="details-content">
+    <!-- Request Information -->
+    <div class="info-section">
+      <mat-card class="info-card">
+        <mat-card-header>
+          <mat-card-title>Request Information</mat-card-title>
+          <mat-card-subtitle>Basic details about this cash request</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="info-grid">
+            <div class="info-item">
+              <label>Request ID:</label>
+              <span>{{ request.id }}</span>
+            </div>
+            <div class="info-item">
+              <label>Requester:</label>
+              <span>{{ request.requesterName }}</span>
+            </div>
+            <div class="info-item">
+              <label>Department:</label>
+              <span>{{ request.department }}</span>
+            </div>
+            <div class="info-item">
+              <label>Date Requested:</label>
+              <span>{{ request.dateRequested | date:'full' }}</span>
+            </div>
+            <div class="info-item">
+              <label>Status:</label>
+              <div class="status-chip" [ngClass]="'status-' + request.status.toLowerCase()">
+                <mat-icon>{{ getStatusIcon(request.status) }}</mat-icon>
+                <span>{{ request.status | titlecase }}</span>
+              </div>
+            </div>
+            <div class="info-item" *ngIf="request.issuedBy">
+              <label>Issued By:</label>
+              <span>{{ request.issuedBy }}</span>
+            </div>
+            <div class="info-item" *ngIf="request.expectedReturnDate">
+              <label>Expected Return:</label>
+              <span>{{ request.expectedReturnDate | date:'full' }}</span>
+            </div>
+            <div class="info-item" *ngIf="request.actualReturnDate">
+              <label>Actual Return:</label>
+              <span>{{ request.actualReturnDate | date:'full' }}</span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Bank Notes Details -->
+    <div class="notes-section">
+      <mat-card class="notes-card">
+        <mat-card-header>
+          <mat-card-title>Bank Notes Breakdown</mat-card-title>
+          <mat-card-subtitle>Detailed breakdown of requested denominations</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="notes-grid">
+            <div *ngFor="let note of request.bankNotes" class="note-item">
+              <div class="note-denomination">R{{ note.denomination }}</div>
+              <div class="note-quantity">{{ note.quantity }} notes</div>
+              <div class="note-total">{{ formatCurrency(note.denomination * note.quantity) }}</div>
+            </div>
+          </div>
+          <mat-divider></mat-divider>
+          <div class="total-amount">
+            <span class="total-label">Total Amount:</span>
+            <span class="total-value">{{ formatCurrency(calculateTotalAmount()) }}</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Comments Section -->
+    <div class="comments-section" *ngIf="request.comments">
+      <mat-card class="comments-card">
+        <mat-card-header>
+          <mat-card-title>Comments</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <p>{{ request.comments }}</p>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Issuer Actions Section -->
+    <div class="actions-section" *ngIf="isIssuer">
+      <!-- Approve Request -->
+      <mat-card class="action-card" *ngIf="canApprove()">
+        <mat-card-header>
+          <mat-card-title>Approve Request</mat-card-title>
+          <mat-card-subtitle>Set expected return date and approve the request</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Expected Return Date</mat-label>
+            <input matInput [matDatepicker]="returnPicker" [(ngModel)]="expectedReturnDate">
+            <mat-datepicker-toggle matSuffix [for]="returnPicker"></mat-datepicker-toggle>
+            <mat-datepicker #returnPicker></mat-datepicker>
+          </mat-form-field>
+        </mat-card-content>
+        <mat-card-actions>
+          <button mat-raised-button color="primary" (click)="approveRequest()">
+            <mat-icon>check_circle</mat-icon>
+            Approve Request
+          </button>
+        </mat-card-actions>
+      </mat-card>
+
+      <!-- Issue Cash -->
+      <mat-card class="action-card" *ngIf="canIssue()">
+        <mat-card-header>
+          <mat-card-title>Issue Cash</mat-card-title>
+          <mat-card-subtitle>Confirm cash counting and issue to requester</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Cash Counted Before Issuance</mat-label>
+            <mat-select [(ngModel)]="cashCountedBeforeIssuance">
+              <mat-option [value]="true">Yes</mat-option>
+              <mat-option [value]="false">No</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </mat-card-content>
+        <mat-card-actions>
+          <button mat-raised-button color="primary" (click)="issueCash()" [disabled]="!cashCountedBeforeIssuance">
+            <mat-icon>payments</mat-icon>
+            Issue Cash
+          </button>
+        </mat-card-actions>
+      </mat-card>
+
+      <!-- Return Cash -->
+      <mat-card class="action-card" *ngIf="canReturn()">
+        <mat-card-header>
+          <mat-card-title>Process Cash Return</mat-card-title>
+          <mat-card-subtitle>Confirm cash return and counting</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Cash Received By</mat-label>
+            <input matInput [(ngModel)]="cashReceivedBy" required>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Cash Counted on Return</mat-label>
+            <mat-select [(ngModel)]="cashCountedOnReturn">
+              <mat-option [value]="true">Yes</mat-option>
+              <mat-option [value]="false">No</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Comments (Optional)</mat-label>
+            <textarea matInput [(ngModel)]="comments" rows="3" placeholder="Any issues or notes..."></textarea>
+          </mat-form-field>
+        </mat-card-content>
+        <mat-card-actions>
+          <button mat-raised-button color="primary" (click)="returnCash()" [disabled]="!cashReceivedBy">
+            <mat-icon>assignment_return</mat-icon>
+            Process Return
+          </button>
+        </mat-card-actions>
+      </mat-card>
+
+      <!-- Complete Request -->
+      <mat-card class="action-card" *ngIf="canComplete()">
+        <mat-card-header>
+          <mat-card-title>Complete Request</mat-card-title>
+          <mat-card-subtitle>Mark this request as completed</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-actions>
+          <button mat-raised-button color="primary" (click)="completeRequest()">
+            <mat-icon>done_all</mat-icon>
+            Complete Request
+          </button>
+        </mat-card-actions>
+      </mat-card>
+
+      <!-- Cancel Request -->
+      <mat-card class="action-card danger" *ngIf="canCancel()">
+        <mat-card-header>
+          <mat-card-title>Cancel Request</mat-card-title>
+          <mat-card-subtitle>Cancel this request (requires reason)</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-actions>
+          <button mat-raised-button color="warn" (click)="cancelRequest()">
+            <mat-icon>cancel</mat-icon>
+            Cancel Request
+          </button>
+        </mat-card-actions>
+      </mat-card>
+    </div>
+  </div>
+</div>
+
+<!-- User Menu -->
+<mat-menu #userMenu="matMenu">
+  <button mat-menu-item>
+    <mat-icon>person</mat-icon>
+    <span>{{ currentUser?.fullName }}</span>
+  </button>
+  <button mat-menu-item>
+    <mat-icon>business</mat-icon>
+    <span>{{ currentUser?.department }}</span>
+  </button>
+  <mat-divider></mat-divider>
+  <button mat-menu-item (click)="goBack()">
+    <mat-icon>dashboard</mat-icon>
+    <span>Dashboard</span>
+  </button>
+</mat-menu>

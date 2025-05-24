@@ -1,0 +1,66 @@
+<div class="login-container">
+  <mat-toolbar color="primary" class="app-toolbar">
+    <mat-icon>account_balance</mat-icon>
+    <span class="toolbar-title">Alternative Channels - Cash Management System</span>
+  </mat-toolbar>
+
+  <div class="login-content">
+    <mat-card class="login-card">
+      <mat-card-header>
+        <mat-card-title>Welcome to Cash Management System</mat-card-title>
+        <mat-card-subtitle>Please select your user profile to continue</mat-card-subtitle>
+      </mat-card-header>
+
+      <mat-card-content>
+        <form (ngSubmit)="onLogin()" #loginForm="ngForm">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Select User</mat-label>
+            <mat-select [(ngModel)]="selectedUserId" name="user" required>
+              <mat-option *ngFor="let user of users" [value]="user.id">
+                {{ user.fullName }} - {{ user.ab }} ({{ getUserRoleDisplay(user.role) }})
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <div class="login-actions">
+            <button 
+              mat-raised-button 
+              color="primary" 
+              type="submit" 
+              [disabled]="!selectedUserId"
+              class="login-button">
+              <mat-icon>login</mat-icon>
+              Login
+            </button>
+          </div>
+        </form>
+      </mat-card-content>
+    </mat-card>
+
+    <div class="info-section">
+      <mat-card class="info-card">
+        <mat-card-header>
+          <mat-card-title>System Information</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="info-item">
+            <mat-icon color="primary">security</mat-icon>
+            <span>Secure cash tracking and management</span>
+          </div>
+          <div class="info-item">
+            <mat-icon color="primary">notifications</mat-icon>
+            <span>Automated notifications and reminders</span>
+          </div>
+          <div class="info-item">
+            <mat-icon color="primary">history</mat-icon>
+            <span>Complete audit trail for all transactions</span>
+          </div>
+          <div class="info-item">
+            <mat-icon color="primary">group</mat-icon>
+            <span>Role-based access control</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+</div>

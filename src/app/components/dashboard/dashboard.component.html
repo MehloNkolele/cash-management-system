@@ -1,0 +1,412 @@
+<div class="dashboard-container">
+  <!-- Toolbar -->
+  <mat-toolbar color="primary" class="app-toolbar">
+    <mat-icon>account_balance</mat-icon>
+    <span class="toolbar-title">Cash Management System</span>
+
+    <span class="toolbar-spacer"></span>
+
+    <!-- Notifications -->
+    <button mat-icon-button [matMenuTriggerFor]="notificationMenu" (click)="markNotificationsAsRead()">
+      <mat-icon [matBadge]="unreadNotificationCount" [matBadgeHidden]="unreadNotificationCount === 0" matBadgeColor="warn">
+        notifications
+      </mat-icon>
+    </button>
+
+    <!-- User Menu -->
+    <button mat-icon-button [matMenuTriggerFor]="userMenu">
+      <mat-icon>account_circle</mat-icon>
+    </button>
+
+    <!-- Logout Button -->
+    <button mat-button (click)="logout()" class="logout-button">
+      <mat-icon>logout</mat-icon>
+      Logout
+    </button>
+  </mat-toolbar>
+
+  <!-- Main Content -->
+  <div class="dashboard-content">
+    <!-- Welcome Section -->
+    <div class="welcome-section">
+      <mat-card class="welcome-card">
+        <mat-card-header>
+          <mat-card-title>Welcome, {{ currentUser?.fullName }}</mat-card-title>
+          <mat-card-subtitle>{{ currentUser?.department }} - {{ currentUser?.ab }}</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <p>Manage your cash requests efficiently and securely.</p>
+        </mat-card-content>
+        <mat-card-actions>
+          <button mat-raised-button color="primary" (click)="createNewRequest()">
+            <mat-icon>add</mat-icon>
+            New Cash Request
+          </button>
+        </mat-card-actions>
+      </mat-card>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="stats-section">
+      <mat-card class="stat-card pending clickable" (click)="navigateToTab(0)">
+        <mat-card-content>
+          <div class="stat-content">
+            <mat-icon>schedule</mat-icon>
+            <div class="stat-info">
+              <div class="stat-number">{{ getPendingRequestsCount() }}</div>
+              <div class="stat-label">Pending Requests</div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card active clickable" (click)="navigateToTab(1)">
+        <mat-card-content>
+          <div class="stat-content">
+            <mat-icon>payments</mat-icon>
+            <div class="stat-info">
+              <div class="stat-number">{{ getActiveRequestsCount() }}</div>
+              <div class="stat-label">Active Requests</div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card completed clickable" (click)="navigateToTab(2)">
+        <mat-card-content>
+          <div class="stat-content">
+            <mat-icon>done_all</mat-icon>
+            <div class="stat-info">
+              <div class="stat-number">{{ getCompletedRequestsCount() }}</div>
+              <div class="stat-label">Completed Requests</div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card total clickable" (click)="navigateToTab(3)">
+        <mat-card-content>
+          <div class="stat-content">
+            <mat-icon>assessment</mat-icon>
+            <div class="stat-info">
+              <div class="stat-number">{{ getTotalRequestsCount() }}</div>
+              <div class="stat-label">Total Requests</div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Requests Section -->
+    <div class="requests-section">
+      <mat-card class="requests-card">
+        <mat-card-header>
+          <mat-card-title>My Cash Requests</mat-card-title>
+          <mat-card-subtitle>Track your current and past requests</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <mat-tab-group #tabGroup [selectedIndex]="selectedTabIndex" (selectedIndexChange)="onTabChange($event)">
+            <!-- Pending Requests Tab -->
+            <mat-tab label="Pending Requests">
+              <div class="tab-content">
+                <div class="table-container">
+                  <table mat-table [dataSource]="pendingRequests" class="requests-table">
+                    <!-- Request ID Column -->
+                    <ng-container matColumnDef="id">
+                      <th mat-header-cell *matHeaderCellDef>Request ID</th>
+                      <td mat-cell *matCellDef="let request">{{ request.id.substring(0, 8) }}...</td>
+                    </ng-container>
+
+                    <!-- Date Requested Column -->
+                    <ng-container matColumnDef="dateRequested">
+                      <th mat-header-cell *matHeaderCellDef>Date Requested</th>
+                      <td mat-cell *matCellDef="let request">{{ request.dateRequested | date:'short' }}</td>
+                    </ng-container>
+
+                    <!-- Amount Column -->
+                    <ng-container matColumnDef="amount">
+                      <th mat-header-cell *matHeaderCellDef>Amount</th>
+                      <td mat-cell *matCellDef="let request">{{ formatCurrency(calculateTotalAmount(request)) }}</td>
+                    </ng-container>
+
+                    <!-- Status Column -->
+                    <ng-container matColumnDef="status">
+                      <th mat-header-cell *matHeaderCellDef>Status</th>
+                      <td mat-cell *matCellDef="let request">
+                        <div class="status-chip" [ngClass]="'status-' + request.status.toLowerCase()">
+                          <mat-icon>{{ getStatusIcon(request.status) }}</mat-icon>
+                          <span>{{ request.status | titlecase }}</span>
+                        </div>
+                      </td>
+                    </ng-container>
+
+                    <!-- Expected Return Column -->
+                    <ng-container matColumnDef="expectedReturn">
+                      <th mat-header-cell *matHeaderCellDef>Expected Return</th>
+                      <td mat-cell *matCellDef="let request">
+                        {{ request.expectedReturnDate ? (request.expectedReturnDate | date:'short') : 'Not set' }}
+                      </td>
+                    </ng-container>
+
+                    <!-- Actions Column -->
+                    <ng-container matColumnDef="actions">
+                      <th mat-header-cell *matHeaderCellDef>Actions</th>
+                      <td mat-cell *matCellDef="let request">
+                        <button mat-icon-button color="primary" (click)="viewRequestDetails(request)">
+                          <mat-icon>visibility</mat-icon>
+                        </button>
+                      </td>
+                    </ng-container>
+
+                    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                    <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+                  </table>
+
+                  <div *ngIf="pendingRequests.length === 0" class="no-requests">
+                    <mat-icon>inbox</mat-icon>
+                    <p>No pending requests</p>
+                  </div>
+                </div>
+              </div>
+            </mat-tab>
+
+            <!-- Active Requests Tab -->
+            <mat-tab label="Active Requests">
+              <div class="tab-content">
+                <div class="table-container">
+                  <table mat-table [dataSource]="activeRequests" class="requests-table">
+                    <!-- Request ID Column -->
+                    <ng-container matColumnDef="id">
+                      <th mat-header-cell *matHeaderCellDef>Request ID</th>
+                      <td mat-cell *matCellDef="let request">{{ request.id.substring(0, 8) }}...</td>
+                    </ng-container>
+
+                    <!-- Date Requested Column -->
+                    <ng-container matColumnDef="dateRequested">
+                      <th mat-header-cell *matHeaderCellDef>Date Requested</th>
+                      <td mat-cell *matCellDef="let request">{{ request.dateRequested | date:'short' }}</td>
+                    </ng-container>
+
+                    <!-- Amount Column -->
+                    <ng-container matColumnDef="amount">
+                      <th mat-header-cell *matHeaderCellDef>Amount</th>
+                      <td mat-cell *matCellDef="let request">{{ formatCurrency(calculateTotalAmount(request)) }}</td>
+                    </ng-container>
+
+                    <!-- Status Column -->
+                    <ng-container matColumnDef="status">
+                      <th mat-header-cell *matHeaderCellDef>Status</th>
+                      <td mat-cell *matCellDef="let request">
+                        <div class="status-chip" [ngClass]="'status-' + request.status.toLowerCase()">
+                          <mat-icon>{{ getStatusIcon(request.status) }}</mat-icon>
+                          <span>{{ request.status | titlecase }}</span>
+                        </div>
+                      </td>
+                    </ng-container>
+
+                    <!-- Expected Return Column -->
+                    <ng-container matColumnDef="expectedReturn">
+                      <th mat-header-cell *matHeaderCellDef>Expected Return</th>
+                      <td mat-cell *matCellDef="let request">
+                        {{ request.expectedReturnDate ? (request.expectedReturnDate | date:'short') : 'Not set' }}
+                      </td>
+                    </ng-container>
+
+                    <!-- Actions Column -->
+                    <ng-container matColumnDef="actions">
+                      <th mat-header-cell *matHeaderCellDef>Actions</th>
+                      <td mat-cell *matCellDef="let request">
+                        <button mat-icon-button color="primary" (click)="viewRequestDetails(request)">
+                          <mat-icon>visibility</mat-icon>
+                        </button>
+                      </td>
+                    </ng-container>
+
+                    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                    <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+                  </table>
+
+                  <div *ngIf="activeRequests.length === 0" class="no-requests">
+                    <mat-icon>inbox</mat-icon>
+                    <p>No active requests</p>
+                  </div>
+                </div>
+              </div>
+            </mat-tab>
+
+            <!-- Completed Requests Tab -->
+            <mat-tab label="Completed Requests">
+              <div class="tab-content">
+                <div class="table-container">
+                  <table mat-table [dataSource]="completedRequests" class="requests-table">
+                    <!-- Request ID Column -->
+                    <ng-container matColumnDef="id">
+                      <th mat-header-cell *matHeaderCellDef>Request ID</th>
+                      <td mat-cell *matCellDef="let request">{{ request.id.substring(0, 8) }}...</td>
+                    </ng-container>
+
+                    <!-- Date Requested Column -->
+                    <ng-container matColumnDef="dateRequested">
+                      <th mat-header-cell *matHeaderCellDef>Date Requested</th>
+                      <td mat-cell *matCellDef="let request">{{ request.dateRequested | date:'short' }}</td>
+                    </ng-container>
+
+                    <!-- Amount Column -->
+                    <ng-container matColumnDef="amount">
+                      <th mat-header-cell *matHeaderCellDef>Amount</th>
+                      <td mat-cell *matCellDef="let request">{{ formatCurrency(calculateTotalAmount(request)) }}</td>
+                    </ng-container>
+
+                    <!-- Status Column -->
+                    <ng-container matColumnDef="status">
+                      <th mat-header-cell *matHeaderCellDef>Status</th>
+                      <td mat-cell *matCellDef="let request">
+                        <div class="status-chip" [ngClass]="'status-' + request.status.toLowerCase()">
+                          <mat-icon>{{ getStatusIcon(request.status) }}</mat-icon>
+                          <span>{{ request.status | titlecase }}</span>
+                        </div>
+                      </td>
+                    </ng-container>
+
+                    <!-- Expected Return Column -->
+                    <ng-container matColumnDef="expectedReturn">
+                      <th mat-header-cell *matHeaderCellDef>Expected Return</th>
+                      <td mat-cell *matCellDef="let request">
+                        {{ request.expectedReturnDate ? (request.expectedReturnDate | date:'short') : 'Not set' }}
+                      </td>
+                    </ng-container>
+
+                    <!-- Actions Column -->
+                    <ng-container matColumnDef="actions">
+                      <th mat-header-cell *matHeaderCellDef>Actions</th>
+                      <td mat-cell *matCellDef="let request">
+                        <button mat-icon-button color="primary" (click)="viewRequestDetails(request)">
+                          <mat-icon>visibility</mat-icon>
+                        </button>
+                      </td>
+                    </ng-container>
+
+                    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                    <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+                  </table>
+
+                  <div *ngIf="completedRequests.length === 0" class="no-requests">
+                    <mat-icon>inbox</mat-icon>
+                    <p>No completed requests</p>
+                  </div>
+                </div>
+              </div>
+            </mat-tab>
+
+            <!-- All Requests Tab -->
+            <mat-tab label="All Requests">
+              <div class="tab-content">
+                <div class="table-container">
+                  <table mat-table [dataSource]="userRequests" class="requests-table">
+                    <!-- Request ID Column -->
+                    <ng-container matColumnDef="id">
+                      <th mat-header-cell *matHeaderCellDef>Request ID</th>
+                      <td mat-cell *matCellDef="let request">{{ request.id.substring(0, 8) }}...</td>
+                    </ng-container>
+
+                    <!-- Date Requested Column -->
+                    <ng-container matColumnDef="dateRequested">
+                      <th mat-header-cell *matHeaderCellDef>Date Requested</th>
+                      <td mat-cell *matCellDef="let request">{{ request.dateRequested | date:'short' }}</td>
+                    </ng-container>
+
+                    <!-- Amount Column -->
+                    <ng-container matColumnDef="amount">
+                      <th mat-header-cell *matHeaderCellDef>Amount</th>
+                      <td mat-cell *matCellDef="let request">{{ formatCurrency(calculateTotalAmount(request)) }}</td>
+                    </ng-container>
+
+                    <!-- Status Column -->
+                    <ng-container matColumnDef="status">
+                      <th mat-header-cell *matHeaderCellDef>Status</th>
+                      <td mat-cell *matCellDef="let request">
+                        <div class="status-chip" [ngClass]="'status-' + request.status.toLowerCase()">
+                          <mat-icon>{{ getStatusIcon(request.status) }}</mat-icon>
+                          <span>{{ request.status | titlecase }}</span>
+                        </div>
+                      </td>
+                    </ng-container>
+
+                    <!-- Expected Return Column -->
+                    <ng-container matColumnDef="expectedReturn">
+                      <th mat-header-cell *matHeaderCellDef>Expected Return</th>
+                      <td mat-cell *matCellDef="let request">
+                        {{ request.expectedReturnDate ? (request.expectedReturnDate | date:'short') : 'Not set' }}
+                      </td>
+                    </ng-container>
+
+                    <!-- Actions Column -->
+                    <ng-container matColumnDef="actions">
+                      <th mat-header-cell *matHeaderCellDef>Actions</th>
+                      <td mat-cell *matCellDef="let request">
+                        <button mat-icon-button color="primary" (click)="viewRequestDetails(request)">
+                          <mat-icon>visibility</mat-icon>
+                        </button>
+                      </td>
+                    </ng-container>
+
+                    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                    <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+                  </table>
+
+                  <div *ngIf="userRequests.length === 0" class="no-requests">
+                    <mat-icon>inbox</mat-icon>
+                    <p>No cash requests found</p>
+                    <button mat-raised-button color="primary" (click)="createNewRequest()">
+                      Create Your First Request
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </mat-tab>
+          </mat-tab-group>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+</div>
+
+<!-- Notification Menu -->
+<mat-menu #notificationMenu="matMenu" class="notification-menu">
+  <div class="notification-header">
+    <h3>Notifications</h3>
+  </div>
+  <div class="notification-list" *ngIf="notifications.length > 0; else noNotifications">
+    <button mat-menu-item *ngFor="let notification of notifications.slice(0, 5)" class="notification-item">
+      <mat-icon [color]="notification.isRead ? '' : 'primary'">{{ notification.type === 'new_request' ? 'mail' : 'info' }}</mat-icon>
+      <div class="notification-content">
+        <div class="notification-title">{{ notification.title }}</div>
+        <div class="notification-message">{{ notification.message }}</div>
+        <div class="notification-time">{{ notification.createdAt | date:'short' }}</div>
+      </div>
+    </button>
+  </div>
+  <ng-template #noNotifications>
+    <div class="no-notifications">
+      <mat-icon>notifications_none</mat-icon>
+      <p>No notifications</p>
+    </div>
+  </ng-template>
+</mat-menu>
+
+<!-- User Menu -->
+<mat-menu #userMenu="matMenu">
+  <button mat-menu-item>
+    <mat-icon>person</mat-icon>
+    <span>{{ currentUser?.fullName }}</span>
+  </button>
+  <button mat-menu-item>
+    <mat-icon>business</mat-icon>
+    <span>{{ currentUser?.department }}</span>
+  </button>
+  <mat-divider></mat-divider>
+  <button mat-menu-item (click)="logout()">
+    <mat-icon>logout</mat-icon>
+    <span>Logout</span>
+  </button>
+</mat-menu>
