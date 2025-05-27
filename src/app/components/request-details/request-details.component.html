@@ -90,11 +90,21 @@
               <div class="note-quantity">{{ note.quantity }} notes</div>
               <div class="note-total">{{ formatCurrency(note.denomination * note.quantity) }}</div>
             </div>
+            <!-- Coins Item -->
+            <div *ngIf="request.coinsRequested" class="note-item coins-item">
+              <div class="note-denomination">
+                <mat-icon>monetization_on</mat-icon>
+                Coins
+              </div>
+              <div class="note-quantity">Requested</div>
+              <div class="note-total">✓</div>
+            </div>
           </div>
           <mat-divider></mat-divider>
           <div class="total-amount">
             <span class="total-label">Total Amount:</span>
             <span class="total-value">{{ formatCurrency(calculateTotalAmount()) }}</span>
+            <span class="coins-indicator" *ngIf="request.coinsRequested">+ Coins</span>
           </div>
         </mat-card-content>
       </mat-card>

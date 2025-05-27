@@ -4,6 +4,7 @@ export interface CashRequest {
   requesterId: string;
   department: string;
   bankNotes: BankNote[];
+  coinsRequested?: boolean;
   dateRequested: Date;
   expectedReturnDate?: Date;
   actualReturnDate?: Date;

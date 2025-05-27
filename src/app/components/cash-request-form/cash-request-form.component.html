@@ -5,9 +5,9 @@
       <mat-icon>arrow_back</mat-icon>
     </button>
     <span class="toolbar-title">New Cash Request</span>
-    
+
     <span class="toolbar-spacer"></span>
-    
+
     <!-- User Menu -->
     <button mat-icon-button [matMenuTriggerFor]="userMenu">
       <mat-icon>account_circle</mat-icon>
@@ -33,7 +33,7 @@
                 <input matInput [value]="currentUser?.fullName" readonly>
               </mat-form-field>
             </div>
-            
+
             <div class="form-row">
               <mat-form-field appearance="outline" class="full-width">
                 <mat-label>Department</mat-label>
@@ -53,10 +53,10 @@
               <div *ngFor="let denom of denominations" class="denomination-item">
                 <mat-form-field appearance="outline">
                   <mat-label>{{ denom.label }}</mat-label>
-                  <input 
-                    matInput 
-                    type="number" 
-                    min="0" 
+                  <input
+                    matInput
+                    type="number"
+                    min="0"
                     [value]="getQuantity(denom.value)"
                     (input)="updateQuantity(denom.value, +$any($event.target).value)"
                     placeholder="0">
@@ -66,13 +66,34 @@
                 </div>
               </div>
             </div>
-            
+
+            <!-- Coins Toggle Section -->
+            <div class="coins-section">
+              <mat-slide-toggle
+                [(ngModel)]="coinsRequested"
+                name="coinsRequested"
+                (change)="onCoinsToggleChange($event.checked)"
+                color="primary">
+                <span class="toggle-label">
+                  <mat-icon>monetization_on</mat-icon>
+                  Request Coins
+                </span>
+              </mat-slide-toggle>
+              <div class="coins-info" *ngIf="coinsRequested">
+                <mat-icon color="primary">check_circle</mat-icon>
+                <span>Coins will be provided with your cash request</span>
+              </div>
+            </div>
+
             <div class="total-section">
               <mat-card class="total-card">
                 <mat-card-content>
                   <div class="total-display">
                     <span class="total-label">Total Amount:</span>
                     <span class="total-amount">{{ formatCurrency(calculateTotal()) }}</span>
+                  </div>
+                  <div class="coins-note" *ngIf="coinsRequested">
+                    <span class="coins-text">+ Coins</span>
                   </div>
                 </mat-card-content>
               </mat-card>
@@ -90,13 +111,13 @@
                 <mat-datepicker #picker></mat-datepicker>
               </mat-form-field>
             </div>
-            
+
             <div class="form-row">
               <mat-form-field appearance="outline" class="full-width">
                 <mat-label>Comments (Optional)</mat-label>
-                <textarea 
-                  matInput 
-                  [(ngModel)]="comments" 
+                <textarea
+                  matInput
+                  [(ngModel)]="comments"
                   name="comments"
                   rows="3"
                   placeholder="Any additional information or special requirements...">
@@ -106,7 +127,7 @@
           </div>
 
           <!-- Summary Section -->
-          <div class="form-section" *ngIf="getSelectedNotes().length > 0">
+          <div class="form-section" *ngIf="getSelectedNotes().length > 0 || coinsRequested">
             <h3>Request Summary</h3>
             <mat-card class="summary-card">
               <mat-card-content>
@@ -114,10 +135,18 @@
                   <span class="note-info">{{ note.quantity }}x R{{ note.denomination }}</span>
                   <span class="note-total">{{ formatCurrency(note.denomination * note.quantity) }}</span>
                 </div>
+                <div class="summary-item coins-summary-item" *ngIf="coinsRequested">
+                  <span class="note-info">
+                    <mat-icon>monetization_on</mat-icon>
+                    Coins
+                  </span>
+                  <span class="note-total">✓</span>
+                </div>
                 <mat-divider></mat-divider>
                 <div class="summary-total">
                   <span class="total-label">Total:</span>
                   <span class="total-amount">{{ formatCurrency(calculateTotal()) }}</span>
+                  <span class="coins-summary" *ngIf="coinsRequested">+ Coins</span>
                 </div>
               </mat-card-content>
             </mat-card>
@@ -129,10 +158,10 @@
               <mat-icon>cancel</mat-icon>
               Cancel
             </button>
-            <button 
-              mat-raised-button 
-              color="primary" 
-              type="submit" 
+            <button
+              mat-raised-button
+              color="primary"
+              type="submit"
               [disabled]="!isFormValid()">
               <mat-icon>send</mat-icon>
               Submit Request

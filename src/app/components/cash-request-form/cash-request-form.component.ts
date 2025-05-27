@@ -15,6 +15,7 @@ import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
 import { MatStepperModule } from '@angular/material/stepper';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 
 import { User, Department } from '../../models/user.model';
 import { BankNote, NoteDenomination, CashRequest } from '../../models/cash-request.model';
@@ -39,7 +40,8 @@ import { CashRequestService } from '../../services/cash-request.service';
     MatSnackBarModule,
     MatStepperModule,
     MatMenuModule,
-    MatDividerModule
+    MatDividerModule,
+    MatSlideToggleModule
   ],
   templateUrl: './cash-request-form.component.html',
   styleUrl: './cash-request-form.component.scss'
@@ -52,6 +54,7 @@ export class CashRequestFormComponent implements OnInit {
   selectedDepartment: string = '';
   dateRequested: Date = new Date();
   bankNotes: BankNote[] = [];
+  coinsRequested: boolean = false;
   comments: string = '';
 
   // Available denominations
@@ -111,15 +114,19 @@ export class CashRequestFormComponent implements OnInit {
     return this.bankNotes.filter(note => note.quantity > 0);
   }
 
+  onCoinsToggleChange(checked: boolean): void {
+    this.coinsRequested = checked;
+  }
+
   isFormValid(): boolean {
     return this.selectedDepartment !== '' &&
-           this.getSelectedNotes().length > 0 &&
-           this.calculateTotal() > 0;
+           (this.getSelectedNotes().length > 0 || this.coinsRequested) &&
+           (this.calculateTotal() > 0 || this.coinsRequested);
   }
 
   onSubmit(): void {
     if (!this.isFormValid()) {
-      this.snackBar.open('Please fill in all required fields and select at least one denomination.', 'Close', {
+      this.snackBar.open('Please fill in all required fields and select at least one denomination or coins.', 'Close', {
         duration: 3000
       });
       return;
@@ -128,6 +135,7 @@ export class CashRequestFormComponent implements OnInit {
     const requestData: Partial<CashRequest> = {
       department: this.selectedDepartment,
       bankNotes: this.getSelectedNotes(),
+      coinsRequested: this.coinsRequested || undefined,
       dateRequested: this.dateRequested,
       comments: this.comments || undefined
     };

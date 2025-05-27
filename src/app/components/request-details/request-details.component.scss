@@ -203,6 +203,9 @@
     font-weight: 700;
     color: #1976d2;
     margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 
   .note-quantity {
@@ -215,6 +218,32 @@
     font-size: 1rem;
     font-weight: 600;
     color: #333;
+  }
+
+  &.coins-item {
+    background-color: #fff3e0;
+    border: 2px solid #ff9800;
+
+    .note-denomination {
+      color: #ff9800;
+
+      mat-icon {
+        font-size: 24px;
+        width: 24px;
+        height: 24px;
+      }
+    }
+
+    .note-quantity {
+      color: #ff9800;
+      font-style: italic;
+    }
+
+    .note-total {
+      color: #4caf50;
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
   }
 }
 
@@ -236,6 +265,13 @@
   .total-value {
     font-size: 1.5rem;
     font-weight: 700;
+  }
+
+  .coins-indicator {
+    font-size: 0.9rem;
+    font-style: italic;
+    opacity: 0.9;
+    margin-left: 8px;
   }
 }
 
