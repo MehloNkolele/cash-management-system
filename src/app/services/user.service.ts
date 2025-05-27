@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject } from 'rxjs';
 import { User, UserRole, Department } from '../models/user.model';
 import { LocalStorageService } from './local-storage.service';
 
@@ -24,7 +24,7 @@ export class UserService {
     if (!this.localStorageService.getItem(this.USERS_KEY)) {
       this.createSampleUsers();
     }
-    
+
     if (!this.localStorageService.getItem(this.DEPARTMENTS_KEY)) {
       this.createSampleDepartments();
     }
@@ -35,8 +35,8 @@ export class UserService {
       {
         id: '1',
         ab: 'AB001',
-        fullName: 'John Smith',
-        email: 'john.smith@company.com',
+        fullName: 'Thando',
+        email: 'thando@company.com',
         contactNumber: '+27 11 123 4567',
         role: UserRole.ISSUER,
         department: 'Alternative Channels'
@@ -44,8 +44,8 @@ export class UserService {
       {
         id: '2',
         ab: 'AB002',
-        fullName: 'Sarah Johnson',
-        email: 'sarah.johnson@company.com',
+        fullName: 'Tiisetso',
+        email: 'tiisetso@company.com',
         contactNumber: '+27 11 123 4568',
         role: UserRole.ISSUER,
         department: 'Alternative Channels'
@@ -53,32 +53,23 @@ export class UserService {
       {
         id: '3',
         ab: 'AB003',
-        fullName: 'Mike Wilson',
-        email: 'mike.wilson@company.com',
+        fullName: 'Bennet',
+        email: 'bennet@company.com',
         contactNumber: '+27 11 123 4569',
-        role: UserRole.ISSUER,
-        department: 'Alternative Channels'
+        role: UserRole.REQUESTER,
+        department: 'QA Testing'
       },
       {
         id: '4',
         ab: 'AB004',
-        fullName: 'Lisa Brown',
-        email: 'lisa.brown@company.com',
+        fullName: 'Judas',
+        email: 'judas@company.com',
         contactNumber: '+27 11 123 4570',
-        role: UserRole.REQUESTER,
-        department: 'QA Testing'
-      },
-      {
-        id: '5',
-        ab: 'AB005',
-        fullName: 'David Lee',
-        email: 'david.lee@company.com',
-        contactNumber: '+27 11 123 4571',
         role: UserRole.REQUESTER,
         department: 'QA Testing'
       }
     ];
-    
+
     this.localStorageService.setItem(this.USERS_KEY, sampleUsers);
   }
 
@@ -90,7 +81,7 @@ export class UserService {
       { id: '4', name: 'Mobile Banking' },
       { id: '5', name: 'Self Service' }
     ];
-    
+
     this.localStorageService.setItem(this.DEPARTMENTS_KEY, departments);
   }
 

@@ -60,6 +60,17 @@
               <label>Actual Return:</label>
               <span>{{ request.actualReturnDate | date:'full' }}</span>
             </div>
+
+            <!-- Deadline Status for Issued Requests -->
+            <div class="info-item deadline-status" *ngIf="request.status === 'issued' && timeUntilDeadline">
+              <label>Return Deadline Status:</label>
+              <span [class]="isRequestOverdue() ? 'overdue-text' : 'deadline-text'">
+                <mat-icon [color]="isRequestOverdue() ? 'warn' : 'primary'">
+                  {{ isRequestOverdue() ? 'warning' : 'schedule' }}
+                </mat-icon>
+                {{ getTimeRemainingMessage() }}
+              </span>
+            </div>
           </div>
         </mat-card-content>
       </mat-card>
@@ -112,13 +123,30 @@
         <mat-card-content>
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>Expected Return Date</mat-label>
-            <input matInput [matDatepicker]="returnPicker" [(ngModel)]="expectedReturnDate">
+            <input matInput
+                   [matDatepicker]="returnPicker"
+                   [(ngModel)]="expectedReturnDate"
+                   (ngModelChange)="onReturnDateChange()"
+                   [min]="getMinDate()">
             <mat-datepicker-toggle matSuffix [for]="returnPicker"></mat-datepicker-toggle>
             <mat-datepicker #returnPicker></mat-datepicker>
+            <mat-hint>All cash must be returned by 3:00 PM</mat-hint>
+            <mat-error *ngIf="!returnDateValidation.isValid">
+              {{ returnDateValidation.message }}
+            </mat-error>
           </mat-form-field>
+
+          <!-- Deadline Information -->
+          <div class="deadline-info" *ngIf="returnDateValidation.isValid && expectedReturnDate">
+            <mat-icon color="primary">schedule</mat-icon>
+            <span>{{ getDeadlineMessage() }}</span>
+          </div>
         </mat-card-content>
         <mat-card-actions>
-          <button mat-raised-button color="primary" (click)="approveRequest()">
+          <button mat-raised-button
+                  color="primary"
+                  (click)="approveRequest()"
+                  [disabled]="!returnDateValidation.isValid">
             <mat-icon>check_circle</mat-icon>
             Approve Request
           </button>

@@ -51,6 +51,12 @@ export class NotificationPanelComponent implements OnInit, OnDestroy {
           .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
       }
     });
+
+    // Refresh notifications every minute to update time remaining
+    setInterval(() => {
+      // Force change detection by creating a new array reference
+      this.notifications = [...this.notifications];
+    }, 60000); // Update every minute
   }
 
   ngOnDestroy(): void {
@@ -226,5 +232,12 @@ export class NotificationPanelComponent implements OnInit, OnDestroy {
       default:
         return 'Notification';
     }
+  }
+
+  /**
+   * Gets dynamic notification content that updates based on current time
+   */
+  getDynamicNotificationContent(notification: Notification): { title: string; message: string } {
+    return this.notificationService.getDynamicNotificationContent(notification);
   }
 }

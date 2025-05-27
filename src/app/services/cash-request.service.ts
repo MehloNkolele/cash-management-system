@@ -10,7 +10,7 @@ import { UserService } from './user.service';
 })
 export class CashRequestService {
   private readonly REQUESTS_KEY = 'cash_mgmt_requests';
-  
+
   private requestsSubject = new BehaviorSubject<CashRequest[]>([]);
   public requests$ = this.requestsSubject.asObservable();
 
@@ -20,6 +20,8 @@ export class CashRequestService {
     private userService: UserService
   ) {
     this.loadRequests();
+    // Set this service in the notification service to avoid circular dependency
+    this.notificationService.setCashRequestService(this);
   }
 
   private loadRequests(): void {
@@ -58,7 +60,7 @@ export class CashRequestService {
   }
 
   getActiveRequests(): CashRequest[] {
-    return this.getAllRequests().filter(request => 
+    return this.getAllRequests().filter(request =>
       [RequestStatus.APPROVED, RequestStatus.ISSUED].includes(request.status)
     );
   }
@@ -95,7 +97,7 @@ export class CashRequestService {
   updateRequest(id: string, updates: Partial<CashRequest>): CashRequest | null {
     const requests = this.getAllRequests();
     const index = requests.findIndex(request => request.id === id);
-    
+
     if (index === -1) {
       return null;
     }

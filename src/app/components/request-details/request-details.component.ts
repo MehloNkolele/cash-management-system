@@ -21,6 +21,7 @@ import { User } from '../../models/user.model';
 import { CashRequest, RequestStatus } from '../../models/cash-request.model';
 import { UserService } from '../../services/user.service';
 import { CashRequestService } from '../../services/cash-request.service';
+import { TimeUtilityService } from '../../services/time-utility.service';
 
 @Component({
   selector: 'app-request-details',
@@ -59,13 +60,18 @@ export class RequestDetailsComponent implements OnInit {
   cashReceivedBy: string = '';
   comments: string = '';
 
+  // 3PM deadline related properties
+  returnDateValidation: { isValid: boolean; message: string } = { isValid: true, message: '' };
+  timeUntilDeadline: { isOverdue: boolean; hoursRemaining: number; minutesRemaining: number; message: string } | null = null;
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private userService: UserService,
     private cashRequestService: CashRequestService,
     private snackBar: MatSnackBar,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private timeUtilityService: TimeUtilityService
   ) {}
 
   ngOnInit(): void {
@@ -95,21 +101,41 @@ export class RequestDetailsComponent implements OnInit {
     // Set default values for issuer actions
     if (this.isIssuer) {
       this.cashReceivedBy = this.currentUser?.fullName || '';
-      this.expectedReturnDate = new Date(Date.now() + 24 * 60 * 60 * 1000); // Default to tomorrow
+      // Set default return date to next valid date at 3PM
+      this.expectedReturnDate = this.timeUtilityService.getNextValidReturnDate();
+      this.validateReturnDate();
+    }
+
+    // Calculate time until deadline for issued requests
+    if (this.request.status === RequestStatus.ISSUED && this.request.expectedReturnDate) {
+      this.timeUntilDeadline = this.timeUtilityService.getTimeUntilDeadline(this.request.expectedReturnDate);
     }
   }
 
   approveRequest(): void {
     if (!this.request || !this.currentUser) return;
 
+    // Validate return date before approving
+    if (!this.returnDateValidation.isValid) {
+      this.snackBar.open(this.returnDateValidation.message, 'Close', { duration: 5000 });
+      return;
+    }
+
     try {
+      // Ensure the return date is set to 3PM
+      const returnDateAt3PM = this.timeUtilityService.setTimeTo3PM(this.expectedReturnDate);
+
       this.cashRequestService.approveRequest(
         this.request.id,
         this.currentUser.id,
-        this.expectedReturnDate
+        returnDateAt3PM
       );
 
-      this.snackBar.open('Request approved successfully!', 'Close', { duration: 3000 });
+      this.snackBar.open(
+        `Request approved! Cash must be returned by ${this.timeUtilityService.formatReturnDeadline(returnDateAt3PM)}`,
+        'Close',
+        { duration: 5000 }
+      );
       this.loadRequest(this.request.id);
     } catch (error) {
       this.snackBar.open('Error approving request', 'Close', { duration: 3000 });
@@ -251,5 +277,50 @@ export class RequestDetailsComponent implements OnInit {
     } else {
       this.router.navigate(['/dashboard']);
     }
+  }
+
+  /**
+   * Validates the selected return date against 3PM deadline rules
+   */
+  validateReturnDate(): void {
+    this.returnDateValidation = this.timeUtilityService.validateReturnDate(this.expectedReturnDate);
+  }
+
+  /**
+   * Called when the return date changes in the date picker
+   */
+  onReturnDateChange(): void {
+    this.validateReturnDate();
+  }
+
+  /**
+   * Gets the formatted deadline message for display
+   */
+  getDeadlineMessage(): string {
+    if (this.expectedReturnDate) {
+      return this.timeUtilityService.formatReturnDeadline(this.expectedReturnDate);
+    }
+    return '';
+  }
+
+  /**
+   * Checks if the request is overdue
+   */
+  isRequestOverdue(): boolean {
+    return this.timeUntilDeadline?.isOverdue || false;
+  }
+
+  /**
+   * Gets the time remaining message
+   */
+  getTimeRemainingMessage(): string {
+    return this.timeUntilDeadline?.message || '';
+  }
+
+  /**
+   * Gets the minimum date for the date picker (today)
+   */
+  getMinDate(): Date {
+    return new Date();
   }
 }

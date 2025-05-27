@@ -1,9 +1,10 @@
-import { Injectable } from '@angular/core';
+import { Injectable, Inject, forwardRef } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { Notification, NotificationType } from '../models/notification.model';
 import { CashRequest } from '../models/cash-request.model';
 import { LocalStorageService } from './local-storage.service';
 import { UserService } from './user.service';
+import { TimeUtilityService } from './time-utility.service';
 
 @Injectable({
   providedIn: 'root'
@@ -18,13 +19,21 @@ export class NotificationService {
   private deletedNotifications: Notification[] = [];
   private undoTimers: Map<string, any> = new Map();
 
+  private cashRequestService: any = null;
+
   constructor(
     private localStorageService: LocalStorageService,
-    private userService: UserService
+    private userService: UserService,
+    private timeUtilityService: TimeUtilityService
   ) {
     this.loadNotifications();
     this.loadDeletedNotifications();
     this.checkScheduledNotifications();
+  }
+
+  // Method to set the cash request service to avoid circular dependency
+  setCashRequestService(cashRequestService: any): void {
+    this.cashRequestService = cashRequestService;
   }
 
   private loadNotifications(): void {
@@ -255,10 +264,14 @@ export class NotificationService {
   }
 
   notifyCashIssued(request: CashRequest): void {
+    const returnDeadline = request.expectedReturnDate
+      ? this.timeUtilityService.formatReturnDeadline(request.expectedReturnDate)
+      : 'Not specified';
+
     this.createNotification({
       type: NotificationType.CASH_ISSUED,
       title: 'Cash Issued',
-      message: `Cash has been issued for your request. Expected return: ${this.formatDate(request.expectedReturnDate)}`,
+      message: `Cash has been issued for your request. Must be returned by: ${returnDeadline}`,
       recipientId: request.requesterId,
       requestId: request.id
     });
@@ -267,16 +280,21 @@ export class NotificationService {
   scheduleReturnReminder(request: CashRequest): void {
     if (!request.expectedReturnDate) return;
 
-    // Schedule reminder 30 minutes before return deadline
-    const reminderTime = new Date(request.expectedReturnDate.getTime() - (30 * 60 * 1000));
+    // Ensure the return date is set to 3PM
+    const returnDeadline = this.timeUtilityService.setTimeTo3PM(request.expectedReturnDate);
+
+    // Schedule reminder 30 minutes before 3PM deadline (2:30 PM)
+    const reminderTime = new Date(returnDeadline.getTime() - (30 * 60 * 1000));
 
     // Only schedule if reminder time is in the future
     if (reminderTime > new Date()) {
+      const deadlineMessage = this.timeUtilityService.formatReturnDeadline(returnDeadline);
+
       // Notify requester
       this.createNotification({
         type: NotificationType.RETURN_REMINDER,
         title: 'Cash Return Reminder',
-        message: `Reminder: Your cash is due to be returned in 30 minutes (${this.formatDate(request.expectedReturnDate)})`,
+        message: `Reminder: Your cash must be returned by ${deadlineMessage}`,
         recipientId: request.requesterId,
         requestId: request.id,
         scheduledFor: reminderTime
@@ -289,7 +307,7 @@ export class NotificationService {
           this.createNotification({
             type: NotificationType.RETURN_REMINDER,
             title: 'Cash Return Reminder',
-            message: `Reminder: Cash issued to ${request.requesterName} is due to be returned in 30 minutes`,
+            message: `Reminder: Cash issued to ${request.requesterName} must be returned by ${deadlineMessage}`,
             recipientId: issuer.id,
             requestId: request.id,
             scheduledFor: reminderTime
@@ -324,6 +342,37 @@ export class NotificationService {
     }
   }
 
+  notifyOverdueReturn(request: CashRequest): void {
+    if (!request.expectedReturnDate) return;
+
+    const timeInfo = this.timeUtilityService.getTimeUntilDeadline(request.expectedReturnDate);
+
+    if (timeInfo.isOverdue) {
+      // Notify requester
+      this.createNotification({
+        type: NotificationType.RETURN_REMINDER,
+        title: 'OVERDUE: Cash Return Required!',
+        message: `Your cash return is ${timeInfo.message}. Please return immediately!`,
+        recipientId: request.requesterId,
+        requestId: request.id
+      });
+
+      // Notify issuer
+      if (request.issuedBy) {
+        const issuer = this.userService.getIssuers().find(i => i.fullName === request.issuedBy);
+        if (issuer) {
+          this.createNotification({
+            type: NotificationType.RETURN_REMINDER,
+            title: 'OVERDUE: Cash Return Required!',
+            message: `Cash issued to ${request.requesterName} is ${timeInfo.message}. Follow up required!`,
+            recipientId: issuer.id,
+            requestId: request.id
+          });
+        }
+      }
+    }
+  }
+
   private checkScheduledNotifications(): void {
     // Check for scheduled notifications every minute
     setInterval(() => {
@@ -350,6 +399,51 @@ export class NotificationService {
   private formatDate(date: Date | undefined): string {
     if (!date) return 'Not specified';
     return date.toLocaleString();
+  }
+
+  /**
+   * Gets dynamic notification content based on current time
+   * This updates the notification message to show accurate time remaining
+   */
+  getDynamicNotificationContent(notification: Notification): { title: string; message: string } {
+    // Only update return reminder notifications
+    if (notification.type !== NotificationType.RETURN_REMINDER || !notification.requestId) {
+      return { title: notification.title, message: notification.message };
+    }
+
+    // Get the associated cash request to calculate current time remaining
+    if (!this.cashRequestService) {
+      // Fallback to original content if service not available
+      return { title: notification.title, message: notification.message };
+    }
+
+    try {
+      const request = this.cashRequestService.getRequestById(notification.requestId);
+      if (!request || !request.expectedReturnDate) {
+        return { title: notification.title, message: notification.message };
+      }
+
+      // Calculate current time until deadline
+      const timeInfo = this.timeUtilityService.getTimeUntilDeadline(request.expectedReturnDate);
+      const deadlineMessage = this.timeUtilityService.formatReturnDeadline(request.expectedReturnDate);
+
+      if (timeInfo.isOverdue) {
+        return {
+          title: 'OVERDUE: Cash Return Required!',
+          message: `Your cash return is ${timeInfo.message}. Please return immediately! Due: ${deadlineMessage}`
+        };
+      } else {
+        // Show accurate time remaining
+        return {
+          title: `Cash Return Reminder - ${timeInfo.message}`,
+          message: `Reminder: Your cash must be returned by ${deadlineMessage}`
+        };
+      }
+    } catch (error) {
+      // Fallback to original content if there's an error
+      console.warn('Error getting dynamic notification content:', error);
+      return { title: notification.title, message: notification.message };
+    }
   }
 
   private saveNotifications(notifications: Notification[]): void {

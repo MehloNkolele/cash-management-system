@@ -59,11 +59,11 @@
       <!-- Notification Content -->
       <div class="notification-content">
         <div class="notification-title">
-          {{ notification.title }}
+          {{ getDynamicNotificationContent(notification).title }}
           <span *ngIf="!notification.isRead" class="unread-indicator"></span>
         </div>
         <div class="notification-message">
-          {{ notification.message }}
+          {{ getDynamicNotificationContent(notification).message }}
         </div>
         <div class="notification-meta">
           <span class="notification-time">
