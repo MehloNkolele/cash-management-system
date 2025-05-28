@@ -37,6 +37,7 @@ import { NotificationPanelComponent } from '../notification-panel/notification-p
 import { AddCashModalComponent } from '../add-cash-modal/add-cash-modal.component';
 import { ProcessReturnsModalComponent } from '../process-returns-modal/process-returns-modal.component';
 import { SystemLogsModalComponent } from '../system-logs-modal/system-logs-modal.component';
+import { LogDetailsModalComponent } from '../log-details-modal/log-details-modal.component';
 
 @Component({
   selector: 'app-manager-dashboard',
@@ -480,6 +481,20 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
 
   navigateToRecentActivity(): void {
     this.navigateToTab(2); // Recent Activity is the third tab (index 2)
+  }
+
+  // Log Details Methods
+  onLogClick(log: SystemLog): void {
+    const dialogRef = this.dialog.open(LogDetailsModalComponent, {
+      width: '90vw',
+      maxWidth: '800px',
+      maxHeight: '90vh',
+      data: log
+    });
+
+    dialogRef.afterClosed().subscribe(() => {
+      // Optional: Handle any actions after the details modal is closed
+    });
   }
 
   logout(): void {

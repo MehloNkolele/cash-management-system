@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MatDialogRef, MatDialogModule } from '@angular/material/dialog';
+import { MatDialogRef, MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTableModule } from '@angular/material/table';
 import { MatIconModule } from '@angular/material/icon';
@@ -16,6 +16,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 import { SystemLog, LogType, LogCategory, LogSeverity, LogFilter } from '../../models/system-log.model';
 import { SystemLogService } from '../../services/system-log.service';
+import { LogDetailsModalComponent } from '../log-details-modal/log-details-modal.component';
 
 @Component({
   selector: 'app-system-logs-modal',
@@ -128,7 +129,10 @@ import { SystemLogService } from '../../services/system-log.service';
             </ng-container>
 
             <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-            <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;"
+                class="clickable-row"
+                (click)="onLogClick(row)"
+                title="Click to view full details"></tr>
           </table>
 
           <!-- Pagination -->
@@ -219,6 +223,19 @@ import { SystemLogService } from '../../services/system-log.service';
       .mat-row:hover {
         background-color: rgba(227, 24, 55, 0.05);
       }
+
+      .clickable-row {
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+
+        &:hover {
+          background-color: rgba(227, 24, 55, 0.08) !important;
+        }
+
+        &:active {
+          background-color: rgba(227, 24, 55, 0.12) !important;
+        }
+      }
     }
 
     // Severity chip styling
@@ -284,7 +301,8 @@ export class SystemLogsModalComponent implements OnInit {
   constructor(
     private dialogRef: MatDialogRef<SystemLogsModalComponent>,
     private systemLogService: SystemLogService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private dialog: MatDialog
   ) {}
 
   ngOnInit(): void {
@@ -340,6 +358,19 @@ export class SystemLogsModalComponent implements OnInit {
       console.error('Error exporting logs:', error);
       this.snackBar.open('Error exporting logs', 'Close', { duration: 3000 });
     }
+  }
+
+  onLogClick(log: SystemLog): void {
+    const dialogRef = this.dialog.open(LogDetailsModalComponent, {
+      width: '90vw',
+      maxWidth: '800px',
+      maxHeight: '90vh',
+      data: log
+    });
+
+    dialogRef.afterClosed().subscribe(() => {
+      // Optional: Handle any actions after the details modal is closed
+    });
   }
 
   onClose(): void {

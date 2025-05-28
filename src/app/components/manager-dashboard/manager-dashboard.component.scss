@@ -332,6 +332,19 @@
   .mat-row:hover {
     background-color: rgba(227, 24, 55, 0.05);
   }
+
+  .clickable-row {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+
+    &:hover {
+      background-color: rgba(227, 24, 55, 0.08) !important;
+    }
+
+    &:active {
+      background-color: rgba(227, 24, 55, 0.12) !important;
+    }
+  }
 }
 
 // Status and Severity Chips

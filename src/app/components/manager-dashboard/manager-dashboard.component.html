@@ -370,7 +370,10 @@
                   </ng-container>
 
                   <tr mat-header-row *matHeaderRowDef="logColumns"></tr>
-                  <tr mat-row *matRowDef="let row; columns: logColumns;"></tr>
+                  <tr mat-row *matRowDef="let row; columns: logColumns;"
+                      class="clickable-row"
+                      (click)="onLogClick(row)"
+                      title="Click to view full details"></tr>
                 </table>
 
                 <div class="no-data" *ngIf="recentLogs.length === 0">
