@@ -11,6 +11,7 @@ import { MatIconModule } from '@angular/material/icon';
 
 import { User, UserRole } from '../../models/user.model';
 import { UserService } from '../../services/user.service';
+import { SystemLogService } from '../../services/system-log.service';
 
 @Component({
   selector: 'app-user-login',
@@ -34,6 +35,7 @@ export class UserLoginComponent implements OnInit {
 
   constructor(
     private userService: UserService,
+    private systemLogService: SystemLogService,
     private router: Router
   ) {}
 
@@ -55,6 +57,10 @@ export class UserLoginComponent implements OnInit {
     const selectedUser = this.userService.getUserById(this.selectedUserId);
     if (selectedUser) {
       this.userService.setCurrentUser(selectedUser);
+
+      // Log successful login
+      this.systemLogService.logUserLogin(selectedUser.id, selectedUser.fullName, true);
+
       this.navigateBasedOnRole(selectedUser);
     }
   }
@@ -62,6 +68,8 @@ export class UserLoginComponent implements OnInit {
   private navigateBasedOnRole(user: User): void {
     if (user.role === UserRole.ISSUER) {
       this.router.navigate(['/issuer-dashboard']);
+    } else if (user.role === UserRole.MANAGER) {
+      this.router.navigate(['/manager-dashboard']);
     } else {
       this.router.navigate(['/dashboard']);
     }
@@ -73,6 +81,8 @@ export class UserLoginComponent implements OnInit {
         return 'Cash Issuer';
       case UserRole.REQUESTER:
         return 'Cash Requester';
+      case UserRole.MANAGER:
+        return 'Manager (Super Admin)';
       case UserRole.ADMIN:
         return 'Administrator';
       default:

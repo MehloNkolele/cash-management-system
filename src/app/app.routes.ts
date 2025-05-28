@@ -19,6 +19,10 @@ export const routes: Routes = [
     loadComponent: () => import('./components/issuer-dashboard/issuer-dashboard.component').then(m => m.IssuerDashboardComponent)
   },
   {
+    path: 'manager-dashboard',
+    loadComponent: () => import('./components/manager-dashboard/manager-dashboard.component').then(m => m.ManagerDashboardComponent)
+  },
+  {
     path: 'request-details/:id',
     loadComponent: () => import('./components/request-details/request-details.component').then(m => m.RequestDetailsComponent)
   },

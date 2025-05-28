@@ -98,6 +98,23 @@ export class NotificationService {
     }
   }
 
+  markMultipleAsRead(notificationIds: string[]): void {
+    const notifications = this.getAllNotifications();
+    let updated = false;
+
+    notificationIds.forEach(id => {
+      const notification = notifications.find(n => n.id === id);
+      if (notification && !notification.isRead) {
+        notification.isRead = true;
+        updated = true;
+      }
+    });
+
+    if (updated) {
+      this.saveNotifications(notifications);
+    }
+  }
+
   markAllAsReadForUser(userId: string): void {
     const notifications = this.getAllNotifications();
     const userNotifications = notifications.filter(n => n.recipientId === userId);
@@ -241,13 +258,15 @@ export class NotificationService {
   // Specific notification methods for cash management
   notifyNewRequest(request: CashRequest): void {
     const issuers = this.userService.getIssuers();
+    const managers = this.userService.getManagers();
+    const recipients = [...issuers, ...managers];
 
-    issuers.forEach(issuer => {
+    recipients.forEach(recipient => {
       this.createNotification({
         type: NotificationType.NEW_REQUEST,
         title: 'New Cash Request',
         message: `${request.requesterName} has submitted a new cash request for ${this.formatAmount(request)}`,
-        recipientId: issuer.id,
+        recipientId: recipient.id,
         requestId: request.id
       });
     });
@@ -327,9 +346,13 @@ export class NotificationService {
       requestId: request.id
     });
 
-    // Notify issuer
+    // Notify issuer and managers
     if (request.issuedBy) {
-      const issuer = this.userService.getIssuers().find(i => i.fullName === request.issuedBy);
+      const issuers = this.userService.getIssuers();
+      const managers = this.userService.getManagers();
+      const recipients = [...issuers, ...managers];
+
+      const issuer = recipients.find(r => r.fullName === request.issuedBy);
       if (issuer) {
         this.createNotification({
           type: NotificationType.REQUEST_COMPLETED,
@@ -339,6 +362,19 @@ export class NotificationService {
           requestId: request.id
         });
       }
+
+      // Notify all managers about completion
+      managers.forEach(manager => {
+        if (manager.fullName !== request.issuedBy) {
+          this.createNotification({
+            type: NotificationType.REQUEST_COMPLETED,
+            title: 'Request Completed',
+            message: `Cash request from ${request.requesterName} has been completed by ${request.issuedBy}.`,
+            recipientId: manager.id,
+            requestId: request.id
+          });
+        }
+      });
     }
   }
 
@@ -357,18 +393,21 @@ export class NotificationService {
         requestId: request.id
       });
 
-      // Notify issuer
+      // Notify issuer and managers
       if (request.issuedBy) {
-        const issuer = this.userService.getIssuers().find(i => i.fullName === request.issuedBy);
-        if (issuer) {
+        const issuers = this.userService.getIssuers();
+        const managers = this.userService.getManagers();
+        const recipients = [...issuers, ...managers];
+
+        recipients.forEach(recipient => {
           this.createNotification({
             type: NotificationType.RETURN_REMINDER,
             title: 'OVERDUE: Cash Return Required!',
             message: `Cash issued to ${request.requesterName} is ${timeInfo.message}. Follow up required!`,
-            recipientId: issuer.id,
+            recipientId: recipient.id,
             requestId: request.id
           });
-        }
+        });
       }
     }
   }

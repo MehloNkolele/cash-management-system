@@ -11,6 +11,7 @@ export interface User {
 export enum UserRole {
   REQUESTER = 'requester',
   ISSUER = 'issuer',
+  MANAGER = 'manager',
   ADMIN = 'admin'
 }
 

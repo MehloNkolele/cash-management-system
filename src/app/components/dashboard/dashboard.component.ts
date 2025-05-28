@@ -20,6 +20,7 @@ import { Notification } from '../../models/notification.model';
 import { UserService } from '../../services/user.service';
 import { CashRequestService } from '../../services/cash-request.service';
 import { NotificationService } from '../../services/notification.service';
+import { SystemLogService } from '../../services/system-log.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -59,6 +60,7 @@ export class DashboardComponent implements OnInit {
     private userService: UserService,
     private cashRequestService: CashRequestService,
     private notificationService: NotificationService,
+    private systemLogService: SystemLogService,
     private router: Router
   ) {}
 
@@ -153,6 +155,11 @@ export class DashboardComponent implements OnInit {
   }
 
   logout(): void {
+    // Log user logout
+    if (this.currentUser) {
+      this.systemLogService.logUserLogout(this.currentUser.id, this.currentUser.fullName);
+    }
+
     this.userService.logout();
     this.router.navigate(['/login']);
   }

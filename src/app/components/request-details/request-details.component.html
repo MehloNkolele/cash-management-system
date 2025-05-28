@@ -133,16 +133,10 @@
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>Expected Return Date</mat-label>
             <input matInput
-                   [matDatepicker]="returnPicker"
-                   [(ngModel)]="expectedReturnDate"
-                   (ngModelChange)="onReturnDateChange()"
-                   [min]="getMinDate()">
-            <mat-datepicker-toggle matSuffix [for]="returnPicker"></mat-datepicker-toggle>
-            <mat-datepicker #returnPicker></mat-datepicker>
-            <mat-hint>All cash must be returned by 3:00 PM</mat-hint>
-            <mat-error *ngIf="!returnDateValidation.isValid">
-              {{ returnDateValidation.message }}
-            </mat-error>
+                   [value]="expectedReturnDate | date:'short'"
+                   readonly>
+            <mat-icon matSuffix>today</mat-icon>
+            <mat-hint>All cash must be returned by 3:00 PM today</mat-hint>
           </mat-form-field>
 
           <!-- Deadline Information -->
@@ -154,8 +148,7 @@
         <mat-card-actions>
           <button mat-raised-button
                   color="primary"
-                  (click)="approveRequest()"
-                  [disabled]="!returnDateValidation.isValid">
+                  (click)="approveRequest()">
             <mat-icon>check_circle</mat-icon>
             Approve Request
           </button>

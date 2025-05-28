@@ -1,0 +1,415 @@
+<div class="manager-dashboard-container">
+  <!-- Toolbar -->
+  <mat-toolbar color="primary" class="app-toolbar">
+    <mat-icon>admin_panel_settings</mat-icon>
+    <span class="toolbar-title">Cash Management System - Manager Dashboard</span>
+
+    <span class="toolbar-spacer"></span>
+
+    <!-- Refresh Button -->
+    <button mat-icon-button (click)="onRefreshData()" title="Refresh Dashboard">
+      <mat-icon>refresh</mat-icon>
+    </button>
+
+    <!-- Notifications -->
+    <app-notification-panel
+      [notifications]="notifications"
+      [unreadCount]="unreadNotificationCount"
+      [userId]="currentUser?.id || ''"
+      (notificationClick)="onNotificationClick($event)"
+      (markAllAsRead)="markNotificationsAsRead()">
+    </app-notification-panel>
+
+    <!-- User Menu -->
+    <button mat-icon-button [matMenuTriggerFor]="userMenu">
+      <mat-icon>account_circle</mat-icon>
+    </button>
+  </mat-toolbar>
+
+  <!-- Dashboard Content -->
+  <div class="dashboard-content">
+    <!-- Welcome Section -->
+    <div class="welcome-section">
+      <mat-card class="welcome-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon class="welcome-icon">admin_panel_settings</mat-icon>
+            Welcome, {{ currentUser?.fullName }}
+          </mat-card-title>
+          <mat-card-subtitle>Manager Dashboard - Super Admin Access</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <p>You have full system oversight capabilities including inventory management, audit access, and system monitoring.</p>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Key Metrics Section -->
+    <div class="metrics-section">
+      <div class="metrics-grid">
+        <!-- Total Inventory Value -->
+        <mat-card class="metric-card inventory-metric">
+          <mat-card-content>
+            <div class="metric-content">
+              <div class="metric-icon">
+                <mat-icon>account_balance_wallet</mat-icon>
+              </div>
+              <div class="metric-details">
+                <div class="metric-value">{{ formatCurrency(totalInventoryValue) }}</div>
+                <div class="metric-label">Total Inventory Value</div>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Active Requests -->
+        <mat-card class="metric-card requests-metric clickable" (click)="navigateToActiveRequests()">
+          <mat-card-content>
+            <div class="metric-content">
+              <div class="metric-icon">
+                <mat-icon [matBadge]="totalActiveRequests" matBadgeColor="warn" [matBadgeHidden]="totalActiveRequests === 0">
+                  assignment
+                </mat-icon>
+              </div>
+              <div class="metric-details">
+                <div class="metric-value">{{ totalActiveRequests }}</div>
+                <div class="metric-label">Active Requests</div>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Critical Alerts -->
+        <mat-card class="metric-card alerts-metric">
+          <mat-card-content>
+            <div class="metric-content">
+              <div class="metric-icon">
+                <mat-icon [matBadge]="criticalAlerts" matBadgeColor="warn" [matBadgeHidden]="criticalAlerts === 0">
+                  warning
+                </mat-icon>
+              </div>
+              <div class="metric-details">
+                <div class="metric-value">{{ criticalAlerts }}</div>
+                <div class="metric-label">Critical Alerts</div>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Compliance Score -->
+        <mat-card class="metric-card compliance-metric">
+          <mat-card-content>
+            <div class="metric-content">
+              <div class="metric-icon">
+                <mat-icon>verified</mat-icon>
+              </div>
+              <div class="metric-details">
+                <div class="metric-value">{{ complianceScore }}%</div>
+                <div class="metric-label">Compliance Score</div>
+                <mat-progress-bar 
+                  mode="determinate" 
+                  [value]="complianceScore"
+                  [color]="complianceScore >= 90 ? 'primary' : complianceScore >= 70 ? 'accent' : 'warn'">
+                </mat-progress-bar>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </div>
+
+    <!-- Quick Actions Section -->
+    <div class="actions-section">
+      <mat-card class="actions-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>flash_on</mat-icon>
+            Quick Actions
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="actions-grid">
+            <button mat-raised-button color="primary" (click)="onAddCash()" class="action-button">
+              <mat-icon>add_circle</mat-icon>
+              Add Cash Inventory
+            </button>
+            
+            <button mat-raised-button color="accent" (click)="onProcessReturns()" class="action-button">
+              <mat-icon>assignment_return</mat-icon>
+              Process Returns
+            </button>
+            
+            <button mat-raised-button (click)="onGenerateAuditReport()" class="action-button">
+              <mat-icon>assessment</mat-icon>
+              Generate Audit Report
+            </button>
+            
+            <button mat-raised-button (click)="onViewLogs()" class="action-button">
+              <mat-icon>list_alt</mat-icon>
+              View System Logs
+            </button>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Main Content Tabs -->
+    <div class="content-section">
+      <mat-tab-group #tabGroup class="content-tabs" color="primary" [selectedIndex]="selectedTabIndex" (selectedIndexChange)="onTabChange($event)">
+        <!-- Inventory Overview Tab -->
+        <mat-tab label="Inventory Overview">
+          <div class="tab-content">
+            <div class="inventory-overview">
+              <!-- Inventory Summary -->
+              <mat-card class="inventory-summary-card" *ngIf="inventorySummary">
+                <mat-card-header>
+                  <mat-card-title>Inventory Summary</mat-card-title>
+                </mat-card-header>
+                <mat-card-content>
+                  <div class="summary-stats">
+                    <div class="stat-item">
+                      <span class="stat-label">Total Notes:</span>
+                      <span class="stat-value">{{ inventorySummary.totalNotes | number }}</span>
+                    </div>
+                    <div class="stat-item">
+                      <span class="stat-label">Total Value:</span>
+                      <span class="stat-value">{{ formatCurrency(inventorySummary.totalValue) }}</span>
+                    </div>
+                    <div class="stat-item">
+                      <span class="stat-label">Low Stock Items:</span>
+                      <span class="stat-value">{{ inventorySummary.lowStockAlerts.length }}</span>
+                    </div>
+                  </div>
+                </mat-card-content>
+              </mat-card>
+
+              <!-- Low Stock Alerts -->
+              <mat-card class="alerts-card" *ngIf="inventorySummary && inventorySummary.lowStockAlerts.length > 0">
+                <mat-card-header>
+                  <mat-card-title>
+                    <mat-icon>warning</mat-icon>
+                    Low Stock Alerts
+                  </mat-card-title>
+                </mat-card-header>
+                <mat-card-content>
+                  <table mat-table [dataSource]="inventorySummary.lowStockAlerts" class="alerts-table">
+                    <ng-container matColumnDef="series">
+                      <th mat-header-cell *matHeaderCellDef>Series</th>
+                      <td mat-cell *matCellDef="let alert">{{ alert.series | titlecase }}</td>
+                    </ng-container>
+
+                    <ng-container matColumnDef="denomination">
+                      <th mat-header-cell *matHeaderCellDef>Denomination</th>
+                      <td mat-cell *matCellDef="let alert">R{{ alert.denomination }}</td>
+                    </ng-container>
+
+                    <ng-container matColumnDef="quantity">
+                      <th mat-header-cell *matHeaderCellDef>Current Stock</th>
+                      <td mat-cell *matCellDef="let alert">{{ alert.currentQuantity }}</td>
+                    </ng-container>
+
+                    <ng-container matColumnDef="threshold">
+                      <th mat-header-cell *matHeaderCellDef>Threshold</th>
+                      <td mat-cell *matCellDef="let alert">{{ alert.minimumThreshold }}</td>
+                    </ng-container>
+
+                    <ng-container matColumnDef="severity">
+                      <th mat-header-cell *matHeaderCellDef>Severity</th>
+                      <td mat-cell *matCellDef="let alert">
+                        <mat-chip [class]="getSeverityClass(alert.severity)">
+                          <mat-icon>{{ getSeverityIcon(alert.severity) }}</mat-icon>
+                          {{ alert.severity | titlecase }}
+                        </mat-chip>
+                      </td>
+                    </ng-container>
+
+                    <tr mat-header-row *matHeaderRowDef="alertColumns"></tr>
+                    <tr mat-row *matRowDef="let row; columns: alertColumns;"></tr>
+                  </table>
+                </mat-card-content>
+              </mat-card>
+            </div>
+          </div>
+        </mat-tab>
+
+        <!-- Active Requests Tab -->
+        <mat-tab label="Active Requests">
+          <div class="tab-content">
+            <mat-card class="requests-card">
+              <mat-card-header>
+                <mat-card-title>Active Cash Requests</mat-card-title>
+                <mat-card-subtitle>{{ activeRequests.length }} active request(s)</mat-card-subtitle>
+              </mat-card-header>
+              <mat-card-content>
+                <table mat-table [dataSource]="activeRequests" class="requests-table" *ngIf="activeRequests.length > 0">
+                  <ng-container matColumnDef="id">
+                    <th mat-header-cell *matHeaderCellDef>Request ID</th>
+                    <td mat-cell *matCellDef="let request">{{ request.id.substring(0, 8) }}...</td>
+                  </ng-container>
+
+                  <ng-container matColumnDef="requester">
+                    <th mat-header-cell *matHeaderCellDef>Requester</th>
+                    <td mat-cell *matCellDef="let request">{{ request.requesterName }}</td>
+                  </ng-container>
+
+                  <ng-container matColumnDef="amount">
+                    <th mat-header-cell *matHeaderCellDef>Amount</th>
+                    <td mat-cell *matCellDef="let request">{{ formatCurrency(calculateRequestTotal(request)) }}</td>
+                  </ng-container>
+
+                  <ng-container matColumnDef="status">
+                    <th mat-header-cell *matHeaderCellDef>Status</th>
+                    <td mat-cell *matCellDef="let request">
+                      <mat-chip [class]="getStatusClass(request.status)">
+                        {{ request.status | titlecase }}
+                      </mat-chip>
+                    </td>
+                  </ng-container>
+
+                  <ng-container matColumnDef="deadline">
+                    <th mat-header-cell *matHeaderCellDef>Expected Return</th>
+                    <td mat-cell *matCellDef="let request">
+                      {{ request.expectedReturnDate ? formatDateTime(request.expectedReturnDate) : 'N/A' }}
+                    </td>
+                  </ng-container>
+
+                  <ng-container matColumnDef="actions">
+                    <th mat-header-cell *matHeaderCellDef>Actions</th>
+                    <td mat-cell *matCellDef="let request">
+                      <div class="action-buttons">
+                        <!-- View Details -->
+                        <button mat-icon-button (click)="onViewRequest(request)" title="View Details">
+                          <mat-icon>visibility</mat-icon>
+                        </button>
+
+                        <!-- Approve Request -->
+                        <button mat-icon-button
+                                *ngIf="canApprove(request)"
+                                (click)="onApproveRequest(request)"
+                                title="Approve Request"
+                                color="primary">
+                          <mat-icon>check_circle</mat-icon>
+                        </button>
+
+                        <!-- Reject Request -->
+                        <button mat-icon-button
+                                *ngIf="canReject(request)"
+                                (click)="onRejectRequest(request)"
+                                title="Reject Request"
+                                color="warn">
+                          <mat-icon>cancel</mat-icon>
+                        </button>
+
+                        <!-- Issue Cash -->
+                        <button mat-icon-button
+                                *ngIf="canIssue(request)"
+                                (click)="onIssueCash(request)"
+                                title="Issue Cash"
+                                color="accent">
+                          <mat-icon>payments</mat-icon>
+                        </button>
+
+                        <!-- Complete Request -->
+                        <button mat-icon-button
+                                *ngIf="canComplete(request)"
+                                (click)="onCompleteRequest(request)"
+                                title="Complete Request"
+                                color="primary">
+                          <mat-icon>done_all</mat-icon>
+                        </button>
+                      </div>
+                    </td>
+                  </ng-container>
+
+                  <tr mat-header-row *matHeaderRowDef="requestColumns"></tr>
+                  <tr mat-row *matRowDef="let row; columns: requestColumns;"></tr>
+                </table>
+
+                <div class="no-data" *ngIf="activeRequests.length === 0">
+                  <mat-icon>inbox</mat-icon>
+                  <p>No active requests found</p>
+                </div>
+              </mat-card-content>
+            </mat-card>
+          </div>
+        </mat-tab>
+
+        <!-- System Logs Tab -->
+        <mat-tab label="Recent Activity">
+          <div class="tab-content">
+            <mat-card class="logs-card">
+              <mat-card-header>
+                <mat-card-title>Recent System Activity</mat-card-title>
+                <mat-card-subtitle>Last 5 system events</mat-card-subtitle>
+              </mat-card-header>
+              <mat-card-content>
+                <table mat-table [dataSource]="recentLogs" class="logs-table" *ngIf="recentLogs.length > 0">
+                  <ng-container matColumnDef="timestamp">
+                    <th mat-header-cell *matHeaderCellDef>Time</th>
+                    <td mat-cell *matCellDef="let log">{{ formatDateTime(log.timestamp) }}</td>
+                  </ng-container>
+
+                  <ng-container matColumnDef="type">
+                    <th mat-header-cell *matHeaderCellDef>Type</th>
+                    <td mat-cell *matCellDef="let log">{{ log.type | titlecase }}</td>
+                  </ng-container>
+
+                  <ng-container matColumnDef="severity">
+                    <th mat-header-cell *matHeaderCellDef>Severity</th>
+                    <td mat-cell *matCellDef="let log">
+                      <mat-chip [class]="getSeverityClass(log.severity)">
+                        <mat-icon>{{ getLogSeverityIcon(log.severity) }}</mat-icon>
+                        {{ log.severity | titlecase }}
+                      </mat-chip>
+                    </td>
+                  </ng-container>
+
+                  <ng-container matColumnDef="message">
+                    <th mat-header-cell *matHeaderCellDef>Message</th>
+                    <td mat-cell *matCellDef="let log">{{ log.message }}</td>
+                  </ng-container>
+
+                  <tr mat-header-row *matHeaderRowDef="logColumns"></tr>
+                  <tr mat-row *matRowDef="let row; columns: logColumns;"></tr>
+                </table>
+
+                <div class="no-data" *ngIf="recentLogs.length === 0">
+                  <mat-icon>history</mat-icon>
+                  <p>No recent activity found</p>
+                </div>
+
+                <div class="view-all-logs" *ngIf="recentLogs.length > 0">
+                  <button mat-stroked-button (click)="onViewLogs()">
+                    <mat-icon>list_alt</mat-icon>
+                    View All Logs
+                  </button>
+                </div>
+              </mat-card-content>
+            </mat-card>
+          </div>
+        </mat-tab>
+      </mat-tab-group>
+    </div>
+  </div>
+</div>
+
+<!-- User Menu -->
+<mat-menu #userMenu="matMenu">
+  <button mat-menu-item>
+    <mat-icon>person</mat-icon>
+    <span>{{ currentUser?.fullName }}</span>
+  </button>
+  <button mat-menu-item>
+    <mat-icon>business</mat-icon>
+    <span>{{ currentUser?.department }}</span>
+  </button>
+  <button mat-menu-item>
+    <mat-icon>admin_panel_settings</mat-icon>
+    <span>Manager (Super Admin)</span>
+  </button>
+  <mat-divider></mat-divider>
+  <button mat-menu-item (click)="logout()">
+    <mat-icon>logout</mat-icon>
+    <span>Logout</span>
+  </button>
+</mat-menu>

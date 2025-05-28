@@ -103,6 +103,14 @@ export class TimeUtilityService {
   }
 
   /**
+   * Gets today's date as the default return date (always today at 3PM)
+   * @returns Today's date at 3:00 PM
+   */
+  getDefaultReturnDate(): Date {
+    return this.getTodayAt3PM();
+  }
+
+  /**
    * Calculates time remaining until 3:00 PM deadline
    * @param returnDate The return deadline date
    * @returns Object with time remaining information

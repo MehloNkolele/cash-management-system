@@ -47,7 +47,7 @@ export class UserService {
         fullName: 'Tiisetso',
         email: 'tiisetso@company.com',
         contactNumber: '+27 11 123 4568',
-        role: UserRole.ISSUER,
+        role: UserRole.MANAGER,
         department: 'Alternative Channels'
       },
       {
@@ -129,5 +129,19 @@ export class UserService {
   isRequester(): boolean {
     const currentUser = this.getCurrentUser();
     return currentUser?.role === UserRole.REQUESTER;
+  }
+
+  isManager(): boolean {
+    const currentUser = this.getCurrentUser();
+    return currentUser?.role === UserRole.MANAGER;
+  }
+
+  getManagers(): User[] {
+    return this.getAllUsers().filter(user => user.role === UserRole.MANAGER);
+  }
+
+  hasManagerPrivileges(): boolean {
+    const currentUser = this.getCurrentUser();
+    return currentUser?.role === UserRole.MANAGER || currentUser?.role === UserRole.ADMIN;
   }
 }

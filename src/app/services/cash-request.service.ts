@@ -4,6 +4,7 @@ import { CashRequest, RequestStatus, BankNote, CashRequestSummary } from '../mod
 import { LocalStorageService } from './local-storage.service';
 import { NotificationService } from './notification.service';
 import { UserService } from './user.service';
+import { SystemLogService } from './system-log.service';
 
 @Injectable({
   providedIn: 'root'
@@ -17,7 +18,8 @@ export class CashRequestService {
   constructor(
     private localStorageService: LocalStorageService,
     private notificationService: NotificationService,
-    private userService: UserService
+    private userService: UserService,
+    private systemLogService: SystemLogService
   ) {
     this.loadRequests();
     // Set this service in the notification service to avoid circular dependency
@@ -88,6 +90,9 @@ export class CashRequestService {
     requests.push(newRequest);
     this.saveRequests(requests);
 
+    // Log the cash request creation
+    this.systemLogService.logCashRequest(newRequest, 'Created');
+
     // Send notification to issuers
     this.notificationService.notifyNewRequest(newRequest);
 
@@ -108,11 +113,26 @@ export class CashRequestService {
       updatedAt: new Date()
     };
 
+    const oldStatus = requests[index].status;
     requests[index] = updatedRequest;
     this.saveRequests(requests);
 
+    // Log the status change
+    const statusChangeMap: { [key in RequestStatus]: string } = {
+      [RequestStatus.PENDING]: 'Created',
+      [RequestStatus.APPROVED]: 'Approved',
+      [RequestStatus.ISSUED]: 'Issued',
+      [RequestStatus.RETURNED]: 'Returned',
+      [RequestStatus.COMPLETED]: 'Completed',
+      [RequestStatus.CANCELLED]: 'Cancelled'
+    };
+
+    if (updates.status && updates.status !== oldStatus) {
+      this.systemLogService.logCashRequest(updatedRequest, statusChangeMap[updates.status]);
+    }
+
     // Handle status change notifications
-    this.handleStatusChangeNotifications(updatedRequest, requests[index].status);
+    this.handleStatusChangeNotifications(updatedRequest, oldStatus);
 
     return updatedRequest;
   }

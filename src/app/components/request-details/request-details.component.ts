@@ -81,7 +81,7 @@ export class RequestDetailsComponent implements OnInit {
       return;
     }
 
-    this.isIssuer = this.userService.isIssuer();
+    this.isIssuer = this.userService.isIssuer() || this.userService.isManager();
     this.isRequester = this.userService.isRequester();
 
     const requestId = this.route.snapshot.paramMap.get('id');
@@ -101,8 +101,8 @@ export class RequestDetailsComponent implements OnInit {
     // Set default values for issuer actions
     if (this.isIssuer) {
       this.cashReceivedBy = this.currentUser?.fullName || '';
-      // Set default return date to next valid date at 3PM
-      this.expectedReturnDate = this.timeUtilityService.getNextValidReturnDate();
+      // Set default return date to today at 3PM (non-editable)
+      this.expectedReturnDate = this.timeUtilityService.getDefaultReturnDate();
       this.validateReturnDate();
     }
 
@@ -115,14 +115,8 @@ export class RequestDetailsComponent implements OnInit {
   approveRequest(): void {
     if (!this.request || !this.currentUser) return;
 
-    // Validate return date before approving
-    if (!this.returnDateValidation.isValid) {
-      this.snackBar.open(this.returnDateValidation.message, 'Close', { duration: 5000 });
-      return;
-    }
-
     try {
-      // Ensure the return date is set to 3PM
+      // Use the default return date (today at 3PM)
       const returnDateAt3PM = this.timeUtilityService.setTimeTo3PM(this.expectedReturnDate);
 
       this.cashRequestService.approveRequest(
@@ -272,7 +266,9 @@ export class RequestDetailsComponent implements OnInit {
   }
 
   goBack(): void {
-    if (this.isIssuer) {
+    if (this.userService.isManager()) {
+      this.router.navigate(['/manager-dashboard']);
+    } else if (this.userService.isIssuer()) {
       this.router.navigate(['/issuer-dashboard']);
     } else {
       this.router.navigate(['/dashboard']);
@@ -286,12 +282,7 @@ export class RequestDetailsComponent implements OnInit {
     this.returnDateValidation = this.timeUtilityService.validateReturnDate(this.expectedReturnDate);
   }
 
-  /**
-   * Called when the return date changes in the date picker
-   */
-  onReturnDateChange(): void {
-    this.validateReturnDate();
-  }
+
 
   /**
    * Gets the formatted deadline message for display
@@ -317,10 +308,5 @@ export class RequestDetailsComponent implements OnInit {
     return this.timeUntilDeadline?.message || '';
   }
 
-  /**
-   * Gets the minimum date for the date picker (today)
-   */
-  getMinDate(): Date {
-    return new Date();
-  }
+
 }
