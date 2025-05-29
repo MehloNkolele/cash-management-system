@@ -1,7 +1,14 @@
 <div class="dashboard-container">
   <!-- Toolbar -->
   <mat-toolbar color="primary" class="app-toolbar">
-    <mat-icon>account_balance</mat-icon>
+    <div class="toolbar-logo clickable-logo" (click)="navigateToDashboard()">
+      <img
+        src="assets/images/Absa_logo.png"
+        alt="Absa Bank Logo"
+        class="toolbar-absa-logo"
+        loading="lazy"
+        onerror="this.style.display='none'">
+    </div>
     <span class="toolbar-title">Cash Management System</span>
 
     <span class="toolbar-spacer"></span>

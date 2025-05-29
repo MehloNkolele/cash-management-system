@@ -1,11 +1,20 @@
 <div class="request-details-container" *ngIf="request">
-  <!-- Toolbar -->
+  <!-- Simple Toolbar (consistent with rest of app) -->
   <mat-toolbar color="primary" class="app-toolbar">
-    <button mat-icon-button (click)="goBack()">
+    <button mat-icon-button (click)="goBack()" class="back-button">
       <mat-icon>arrow_back</mat-icon>
     </button>
-    <span class="toolbar-title">Request Details - {{ request.id.substring(0, 8) }}...</span>
 
+    <div class="toolbar-logo clickable-logo" (click)="navigateToDashboard()">
+      <img
+        src="assets/images/Absa_logo.png"
+        alt="Absa Bank Logo"
+        class="toolbar-absa-logo"
+        loading="lazy"
+        onerror="this.style.display='none'">
+    </div>
+
+    <span class="toolbar-title">Request Details</span>
     <span class="toolbar-spacer"></span>
 
     <!-- User Menu -->
@@ -16,107 +25,169 @@
 
   <!-- Main Content -->
   <div class="details-content">
-    <!-- Request Information -->
-    <div class="info-section">
-      <mat-card class="info-card">
-        <mat-card-header>
-          <mat-card-title>Request Information</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-          <div class="info-grid">
-            <div class="info-item">
-              <label>Request ID:</label>
-              <span>{{ request.id }}</span>
-            </div>
-            <div class="info-item">
-              <label>Requester:</label>
-              <span>{{ request.requesterName }}</span>
-            </div>
-            <div class="info-item">
-              <label>Department:</label>
-              <span>{{ request.department }}</span>
-            </div>
-            <div class="info-item">
-              <label>Date Requested:</label>
-              <span>{{ request.dateRequested | date:'full' }}</span>
-            </div>
-            <div class="info-item">
-              <label>Status:</label>
-              <div class="status-chip" [ngClass]="'status-' + request.status.toLowerCase()">
-                <mat-icon>{{ getStatusIcon(request.status) }}</mat-icon>
-                <span>{{ request.status | titlecase }}</span>
-              </div>
-            </div>
-            <div class="info-item" *ngIf="request.issuedBy">
-              <label>Issued By:</label>
-              <span>{{ request.issuedBy }}</span>
-            </div>
-            <div class="info-item" *ngIf="request.expectedReturnDate">
-              <label>Expected Return:</label>
-              <span>{{ request.expectedReturnDate | date:'full' }}</span>
-            </div>
-            <div class="info-item" *ngIf="request.actualReturnDate">
-              <label>Actual Return:</label>
-              <span>{{ request.actualReturnDate | date:'full' }}</span>
-            </div>
-
-            <!-- Deadline Status for Issued Requests -->
-            <div class="info-item deadline-status" *ngIf="request.status === 'issued' && timeUntilDeadline">
-              <label>Return Deadline Status:</label>
-              <span [class]="isRequestOverdue() ? 'overdue-text' : 'deadline-text'">
-                <mat-icon [color]="isRequestOverdue() ? 'warn' : 'primary'">
-                  {{ isRequestOverdue() ? 'warning' : 'schedule' }}
-                </mat-icon>
-                {{ getTimeRemainingMessage() }}
-              </span>
-            </div>
-          </div>
-        </mat-card-content>
-      </mat-card>
+    <!-- Request Header with Status -->
+    <div class="request-header">
+      <div class="request-info">
+        <h1 class="request-title">Cash Request</h1>
+        <p class="request-id">{{ request.id }}</p>
+        <div class="status-chip" [ngClass]="'status-' + request.status.toLowerCase()">
+          <mat-icon>{{ getStatusIcon(request.status) }}</mat-icon>
+          <span>{{ request.status }}</span>
+        </div>
+        <div class="priority-indicator" *ngIf="timeUntilDeadline?.isOverdue">
+          <mat-icon class="urgent-icon">warning</mat-icon>
+          <span class="urgent-text">OVERDUE</span>
+        </div>
+      </div>
     </div>
 
-    <!-- Bank Notes Details -->
+    <!-- Progress Timeline -->
+    <div class="progress-timeline-section">
+      <div class="timeline-card">
+        <div class="timeline-header">
+          <h3>Request Progress</h3>
+        </div>
+        <div class="timeline-container">
+          <div class="timeline-step"
+               [ngClass]="{ 'completed': isStepCompleted('pending'), 'active': request.status === 'pending' }">
+            <div class="step-circle">
+              <mat-icon>{{ getTimelineIcon('pending') }}</mat-icon>
+            </div>
+            <span class="step-label">Submitted</span>
+          </div>
+
+          <div class="timeline-connector"
+               [ngClass]="{ 'completed': isStepCompleted('approved') }"></div>
+
+          <div class="timeline-step"
+               [ngClass]="{ 'completed': isStepCompleted('approved'), 'active': request.status === 'approved' }">
+            <div class="step-circle">
+              <mat-icon>{{ getTimelineIcon('approved') }}</mat-icon>
+            </div>
+            <span class="step-label">Approved</span>
+          </div>
+
+          <div class="timeline-connector"
+               [ngClass]="{ 'completed': isStepCompleted('issued') }"></div>
+
+          <div class="timeline-step"
+               [ngClass]="{ 'completed': isStepCompleted('issued'), 'active': request.status === 'issued' }">
+            <div class="step-circle">
+              <mat-icon>{{ getTimelineIcon('issued') }}</mat-icon>
+            </div>
+            <span class="step-label">Issued</span>
+          </div>
+
+          <div class="timeline-connector"
+               [ngClass]="{ 'completed': isStepCompleted('returned') }"></div>
+
+          <div class="timeline-step"
+               [ngClass]="{ 'completed': isStepCompleted('returned'), 'active': request.status === 'returned' }">
+            <div class="step-circle">
+              <mat-icon>{{ getTimelineIcon('returned') }}</mat-icon>
+            </div>
+            <span class="step-label">Returned</span>
+          </div>
+
+          <div class="timeline-connector"
+               [ngClass]="{ 'completed': isStepCompleted('completed') }"></div>
+
+          <div class="timeline-step"
+               [ngClass]="{ 'completed': isStepCompleted('completed'), 'active': request.status === 'completed' }">
+            <div class="step-circle">
+              <mat-icon>{{ getTimelineIcon('completed') }}</mat-icon>
+            </div>
+            <span class="step-label">Completed</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Simplified Request Information -->
+    <div class="info-section">
+      <div class="info-cards-grid">
+        <!-- Main Request Information Card -->
+        <div class="modern-card main-info-card">
+          <div class="card-header">
+            <div class="header-icon">
+              <mat-icon>receipt_long</mat-icon>
+            </div>
+            <div class="header-content">
+              <h3 class="card-title">Request Information</h3>
+              <p class="card-subtitle">{{ request.requesterName }} • {{ request.department }}</p>
+            </div>
+          </div>
+          <div class="card-content">
+            <div class="info-grid">
+              <div class="info-item">
+                <span class="info-label">Date Requested</span>
+                <span class="info-value">{{ request.dateRequested | date:'medium' }}</span>
+              </div>
+              <div class="info-item" *ngIf="request.expectedReturnDate">
+                <span class="info-label">Expected Return</span>
+                <span class="info-value">{{ request.expectedReturnDate | date:'medium' }}</span>
+              </div>
+              <div class="info-item" *ngIf="request.issuedBy">
+                <span class="info-label">Issued By</span>
+                <span class="info-value">{{ request.issuedBy }}</span>
+              </div>
+              <div class="info-item" *ngIf="request.actualReturnDate">
+                <span class="info-label">Returned</span>
+                <span class="info-value">{{ request.actualReturnDate | date:'medium' }}</span>
+              </div>
+            </div>
+
+            <!-- Deadline Warning (if applicable) -->
+            <div class="deadline-alert" *ngIf="timeUntilDeadline?.isOverdue">
+              <mat-icon class="alert-icon">warning</mat-icon>
+              <span class="alert-text">{{ timeUntilDeadline?.message }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Simplified Bank Notes Section -->
     <div class="notes-section">
-      <mat-card class="notes-card">
-        <mat-card-header>
-          <mat-card-title>Bank Notes Breakdown</mat-card-title>
-          <mat-card-subtitle>Detailed breakdown of requested denominations</mat-card-subtitle>
-        </mat-card-header>
-        <mat-card-content>
-          <div class="notes-grid">
-            <div *ngFor="let note of request.bankNotes" class="note-item">
-              <div class="note-denomination">R{{ note.denomination }}</div>
+      <div class="modern-card notes-card">
+        <div class="card-header">
+          <div class="header-icon">
+            <mat-icon>payments</mat-icon>
+          </div>
+          <div class="header-content">
+            <h3 class="card-title">Cash Request</h3>
+            <p class="card-subtitle">Total: {{ formatCurrency(calculateTotalAmount()) }}</p>
+          </div>
+        </div>
+        <div class="card-content">
+          <!-- Simplified Notes List -->
+          <div class="simple-notes-list">
+            <div *ngFor="let note of request.bankNotes" class="simple-note-item">
+              <div class="note-denomination">
+                <span class="denomination-text">R{{ note.denomination }}</span>
+                <span class="series-text" *ngIf="note.series">{{ getSeriesLabel(note.series) }}</span>
+              </div>
               <div class="note-quantity">{{ note.quantity }} notes</div>
               <div class="note-total">{{ formatCurrency(note.denomination * note.quantity) }}</div>
             </div>
-            <!-- Coins Item -->
-            <div *ngIf="request.coinsRequested" class="note-item coins-item">
-              <div class="note-denomination">
+          </div>
+
+          <!-- Simple Additional Items -->
+          <div class="simple-extras" *ngIf="request.coinsRequested || request.dyePackRequired">
+            <div class="extras-divider"></div>
+            <div class="extras-items">
+              <span *ngIf="request.coinsRequested" class="extra-tag">
                 <mat-icon>monetization_on</mat-icon>
                 Coins
-              </div>
-              <div class="note-quantity">Requested</div>
-              <div class="note-total">✓</div>
-            </div>
-            <!-- Dye Pack Item -->
-            <div *ngIf="request.dyePackRequired" class="note-item dye-pack-item">
-              <div class="note-denomination">
+              </span>
+              <span *ngIf="request.dyePackRequired" class="extra-tag">
                 <mat-icon>security</mat-icon>
                 Dye Pack
-              </div>
-              <div class="note-quantity">Required</div>
-              <div class="note-total">✓</div>
+              </span>
             </div>
           </div>
-          <mat-divider></mat-divider>
-          <div class="total-amount">
-            <span class="total-label">Total Amount:</span>
-            <span class="total-value">{{ formatCurrency(calculateTotalAmount()) }}</span>
-            <span class="coins-indicator" *ngIf="request.coinsRequested">+ Coins</span>
-            <span class="dye-pack-indicator" *ngIf="request.dyePackRequired">+ Dye Pack</span>
-          </div>
-        </mat-card-content>
-      </mat-card>
+        </div>
+      </div>
     </div>
 
     <!-- Comments Section -->
@@ -174,63 +245,7 @@
       </mat-card>
     </div>
 
-    <!-- Inventory Validation Section (for Approvers) -->
-    <div class="inventory-section" *ngIf="isIssuer && inventoryValidation">
-      <mat-card class="inventory-card" [ngClass]="{ 'warning': inventoryValidation.warnings.length > 0, 'error': inventoryValidation.errors.length > 0 }">
-        <mat-card-header>
-          <mat-card-title>
-            <mat-icon [color]="inventoryValidation.errors.length > 0 ? 'warn' : inventoryValidation.warnings.length > 0 ? 'accent' : 'primary'">
-              {{ inventoryValidation.errors.length > 0 ? 'error' : inventoryValidation.warnings.length > 0 ? 'warning' : 'inventory' }}
-            </mat-icon>
-            Inventory Validation
-          </mat-card-title>
-          <mat-card-subtitle>
-            {{ inventoryValidation.errors.length > 0 ? 'Inventory issues detected' :
-               inventoryValidation.warnings.length > 0 ? 'Inventory warnings' : 'Inventory available' }}
-          </mat-card-subtitle>
-        </mat-card-header>
-        <mat-card-content>
-          <!-- Errors -->
-          <div class="validation-messages" *ngIf="inventoryValidation.errors.length > 0">
-            <h4 class="error-title">
-              <mat-icon color="warn">error</mat-icon>
-              Inventory Errors
-            </h4>
-            <ul class="error-list">
-              <li *ngFor="let error of inventoryValidation.errors" class="error-item">{{ error }}</li>
-            </ul>
-          </div>
 
-          <!-- Warnings -->
-          <div class="validation-messages" *ngIf="inventoryValidation.warnings.length > 0">
-            <h4 class="warning-title">
-              <mat-icon color="accent">warning</mat-icon>
-              Inventory Warnings
-            </h4>
-            <ul class="warning-list">
-              <li *ngFor="let warning of inventoryValidation.warnings" class="warning-item">{{ warning }}</li>
-            </ul>
-          </div>
-
-          <!-- Inventory Preview -->
-          <div class="inventory-preview" *ngIf="inventoryValidation.inventoryPreview && inventoryValidation.inventoryPreview.length > 0">
-            <h4>Inventory Impact Preview</h4>
-            <div class="preview-grid">
-              <div *ngFor="let preview of inventoryValidation.inventoryPreview" class="preview-item">
-                <div class="preview-denomination">R{{ preview.denomination }} ({{ preview.series }})</div>
-                <div class="preview-details">
-                  <span class="current">Current: {{ preview.currentQuantity }}</span>
-                  <span class="requested">Requested: {{ preview.requestedQuantity }}</span>
-                  <span class="remaining" [ngClass]="{ 'low': preview.remainingAfterApproval < 10 }">
-                    Remaining: {{ preview.remainingAfterApproval }}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </mat-card-content>
-      </mat-card>
-    </div>
 
     <!-- Issuer Actions Section -->
     <div class="actions-section" *ngIf="isIssuer">

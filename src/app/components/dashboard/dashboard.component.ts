@@ -219,4 +219,9 @@ export class DashboardComponent implements OnInit {
     this.loadUserRequests();
     this.loadNotifications();
   }
+
+  navigateToDashboard(): void {
+    // Already on dashboard, but could refresh or scroll to top
+    window.scrollTo(0, 0);
+  }
 }

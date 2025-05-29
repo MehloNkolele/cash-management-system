@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { trigger, transition, style, animate } from '@angular/animations';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -50,11 +51,35 @@ import { InventoryService } from '../../services/inventory.service';
     MatRadioModule
   ],
   templateUrl: './cash-request-form.component.html',
-  styleUrl: './cash-request-form.component.scss'
+  styleUrl: './cash-request-form.component.scss',
+  animations: [
+    trigger('slideIn', [
+      transition(':enter', [
+        style({ transform: 'translateX(100%)', opacity: 0 }),
+        animate('300ms ease-in', style({ transform: 'translateX(0%)', opacity: 1 }))
+      ]),
+      transition(':leave', [
+        animate('300ms ease-out', style({ transform: 'translateX(-100%)', opacity: 0 }))
+      ])
+    ]),
+    trigger('fadeInOut', [
+      transition(':enter', [
+        style({ opacity: 0, transform: 'translateY(-10px)' }),
+        animate('250ms ease-in', style({ opacity: 1, transform: 'translateY(0)' }))
+      ]),
+      transition(':leave', [
+        animate('200ms ease-out', style({ opacity: 0, transform: 'translateY(-10px)' }))
+      ])
+    ])
+  ]
 })
 export class CashRequestFormComponent implements OnInit {
   currentUser: User | null = null;
   departments: Department[] = [];
+
+  // Wizard state
+  currentStep: number = 1;
+  totalSteps: number = 3;
 
   // Form data
   selectedDepartment: string = '';
@@ -239,6 +264,11 @@ export class CashRequestFormComponent implements OnInit {
     this.validateSeriesAvailability(denomination);
   }
 
+  onSeriesSelectChange(denomination: NoteDenomination, series: NoteSeries): void {
+    this.selectedSeries[denomination] = series;
+    this.validateSeriesAvailability(denomination);
+  }
+
   validateSeriesAvailability(denomination: NoteDenomination): void {
     const quantity = this.getQuantity(denomination);
     const selectedSeries = this.selectedSeries[denomination];
@@ -299,15 +329,25 @@ export class CashRequestFormComponent implements OnInit {
     return seriesAvailability.isRecommended || false;
   }
 
+  trackBySeries(index: number, item: SeriesInventoryAvailability): string {
+    return `${item.denomination}_${item.series}`;
+  }
+
   onSmartModeToggle(enabled: boolean): void {
+    // Immediate state update for responsive UI
     this.smartMode = enabled;
-    if (enabled) {
-      // Auto-select recommended series
-      this.loadInventoryAvailability();
-    } else {
-      // Clear series selections
-      this.selectedSeries = {};
-    }
+
+    // Use setTimeout to ensure smooth UI transition
+    setTimeout(() => {
+      if (enabled) {
+        // Auto-select recommended series
+        this.loadInventoryAvailability();
+      } else {
+        // Clear series selections and close any open dropdowns
+        this.selectedSeries = {};
+        this.showSeriesSelection = {};
+      }
+    }, 0);
   }
 
   // Override the updateQuantity method to include series validation
@@ -359,5 +399,65 @@ export class CashRequestFormComponent implements OnInit {
 
   hasAvailabilityWarnings(): boolean {
     return this.getAvailabilityWarnings().length > 0;
+  }
+
+  // Wizard navigation methods
+  nextStep(): void {
+    if (this.currentStep < this.totalSteps && this.isStepValid(this.currentStep)) {
+      this.currentStep++;
+    }
+  }
+
+  previousStep(): void {
+    if (this.currentStep > 1) {
+      this.currentStep--;
+    }
+  }
+
+  isStepValid(step: number): boolean {
+    switch (step) {
+      case 1:
+        // Step 1: Requester information
+        return this.selectedDepartment !== '';
+      case 2:
+        // Step 2: Cash selection
+        return this.getSelectedNotes().length > 0 || this.coinsRequested;
+      case 3:
+        // Step 3: Review (always valid if we reach here)
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  goToStep(step: number): void {
+    if (step >= 1 && step <= this.totalSteps) {
+      // Validate all previous steps
+      let canProceed = true;
+      for (let i = 1; i < step; i++) {
+        if (!this.isStepValid(i)) {
+          canProceed = false;
+          break;
+        }
+      }
+
+      if (canProceed) {
+        this.currentStep = step;
+      } else {
+        this.snackBar.open('Please complete all previous steps before proceeding.', 'Close', {
+          duration: 3000
+        });
+      }
+    }
+  }
+
+  navigateToDashboard(): void {
+    if (this.userService.isManager()) {
+      this.router.navigate(['/manager-dashboard']);
+    } else if (this.userService.isIssuer()) {
+      this.router.navigate(['/issuer-dashboard']);
+    } else {
+      this.router.navigate(['/dashboard']);
+    }
   }
 }

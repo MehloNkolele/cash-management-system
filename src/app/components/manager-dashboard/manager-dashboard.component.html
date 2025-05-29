@@ -1,10 +1,27 @@
 <div class="manager-dashboard-container">
   <!-- Toolbar -->
   <mat-toolbar color="primary" class="app-toolbar">
-    <mat-icon>admin_panel_settings</mat-icon>
+    <div class="toolbar-logo clickable-logo" (click)="navigateToDashboard()">
+      <img
+        src="assets/images/Absa_logo.png"
+        alt="Absa Bank Logo"
+        class="toolbar-absa-logo"
+        loading="lazy"
+        onerror="this.style.display='none'">
+    </div>
     <span class="toolbar-title">Cash Management System - Manager Dashboard</span>
 
     <span class="toolbar-spacer"></span>
+
+    <!-- Inventory Access Button -->
+    <button mat-raised-button
+            color="accent"
+            (click)="onViewInventory()"
+            class="toolbar-inventory-btn"
+            title="Access Cash Inventory Management">
+      <mat-icon>inventory</mat-icon>
+      <span class="btn-text">Inventory</span>
+    </button>
 
     <!-- Refresh Button -->
     <button mat-icon-button (click)="onRefreshData()" title="Refresh Dashboard">
@@ -48,7 +65,9 @@
     <div class="metrics-section">
       <div class="metrics-grid">
         <!-- Total Inventory Value -->
-        <mat-card class="metric-card inventory-metric">
+        <mat-card class="metric-card inventory-metric clickable"
+                  (click)="onViewInventory()"
+                  title="Click to access inventory management">
           <mat-card-content>
             <div class="metric-content">
               <div class="metric-icon">
@@ -57,6 +76,10 @@
               <div class="metric-details">
                 <div class="metric-value">{{ formatCurrency(totalInventoryValue) }}</div>
                 <div class="metric-label">Total Inventory Value</div>
+                <div class="metric-action">
+                  <mat-icon class="action-icon">settings</mat-icon>
+                  <span>Manage</span>
+                </div>
               </div>
             </div>
           </mat-card-content>
@@ -130,10 +153,21 @@
               View System Logs
             </button>
 
-            <button mat-raised-button (click)="onViewInventory()" class="action-button">
-              <mat-icon>inventory</mat-icon>
-              Manage Inventory
-            </button>
+            <div class="action-item inventory-action">
+              <button mat-raised-button
+                      color="primary"
+                      (click)="onViewInventory()"
+                      class="action-button enhanced-inventory-btn">
+                <div class="button-content">
+                  <mat-icon class="action-icon">inventory</mat-icon>
+                  <div class="button-text">
+                    <span class="primary-text">Inventory Management</span>
+                    <span class="secondary-text">Full inventory control & monitoring</span>
+                  </div>
+                  <mat-icon class="arrow-icon">arrow_forward</mat-icon>
+                </div>
+              </button>
+            </div>
           </div>
         </mat-card-content>
       </mat-card>
@@ -395,6 +429,11 @@
   <button mat-menu-item>
     <mat-icon>admin_panel_settings</mat-icon>
     <span>Manager (Super Admin)</span>
+  </button>
+  <mat-divider></mat-divider>
+  <button mat-menu-item (click)="onViewInventory()">
+    <mat-icon>inventory</mat-icon>
+    <span>Inventory Management</span>
   </button>
   <mat-divider></mat-divider>
   <button mat-menu-item (click)="logout()">

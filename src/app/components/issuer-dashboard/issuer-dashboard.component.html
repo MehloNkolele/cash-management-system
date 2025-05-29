@@ -1,10 +1,27 @@
 <div class="issuer-dashboard-container">
   <!-- Toolbar -->
   <mat-toolbar color="primary" class="app-toolbar">
-    <mat-icon>account_balance</mat-icon>
+    <div class="toolbar-logo clickable-logo" (click)="navigateToDashboard()">
+      <img
+        src="assets/images/Absa_logo.png"
+        alt="Absa Bank Logo"
+        class="toolbar-absa-logo"
+        loading="lazy"
+        onerror="this.style.display='none'">
+    </div>
     <span class="toolbar-title">Cash Management System - Issuer Dashboard</span>
 
     <span class="toolbar-spacer"></span>
+
+    <!-- Inventory Access Button -->
+    <button mat-raised-button
+            color="accent"
+            (click)="onViewInventory()"
+            class="toolbar-inventory-btn"
+            title="Access Cash Inventory Management">
+      <mat-icon>inventory</mat-icon>
+      <span class="btn-text">Inventory</span>
+    </button>
 
     <!-- Refresh Button -->
     <button mat-icon-button (click)="refreshData()" title="Refresh">
@@ -86,7 +103,9 @@
       </mat-card>
 
       <!-- Inventory Summary Cards -->
-      <mat-card class="stat-card inventory-value-card">
+      <mat-card class="stat-card inventory-value-card clickable"
+                (click)="onViewInventory()"
+                title="Click to view detailed inventory management">
         <mat-card-content>
           <div class="stat-content">
             <div class="stat-icon">
@@ -95,12 +114,18 @@
             <div class="stat-details">
               <div class="stat-number">{{ formatCurrency(totalInventoryValue) }}</div>
               <div class="stat-label">Total Inventory Value</div>
+              <div class="stat-action">
+                <mat-icon class="action-icon">visibility</mat-icon>
+                <span>View Details</span>
+              </div>
             </div>
           </div>
         </mat-card-content>
       </mat-card>
 
-      <mat-card class="stat-card inventory-notes-card">
+      <mat-card class="stat-card inventory-notes-card clickable"
+                (click)="onViewInventory()"
+                title="Click to view detailed inventory management">
         <mat-card-content>
           <div class="stat-content">
             <div class="stat-icon">
@@ -109,6 +134,10 @@
             <div class="stat-details">
               <div class="stat-number">{{ formatInventoryNumber(totalInventoryNotes) }}</div>
               <div class="stat-label">Total Notes Available</div>
+              <div class="stat-action">
+                <mat-icon class="action-icon">visibility</mat-icon>
+                <span>View Details</span>
+              </div>
             </div>
           </div>
         </mat-card-content>
@@ -123,13 +152,25 @@
             <mat-icon>flash_on</mat-icon>
             Quick Actions
           </mat-card-title>
+          <mat-card-subtitle>Essential tools for cash management operations</mat-card-subtitle>
         </mat-card-header>
         <mat-card-content>
           <div class="actions-grid">
-            <button mat-raised-button color="primary" (click)="onViewInventory()" class="action-button">
-              <mat-icon>inventory</mat-icon>
-              View Inventory
-            </button>
+            <div class="action-item inventory-action">
+              <button mat-raised-button
+                      color="primary"
+                      (click)="onViewInventory()"
+                      class="action-button enhanced-inventory-btn">
+                <div class="button-content">
+                  <mat-icon class="action-icon">inventory</mat-icon>
+                  <div class="button-text">
+                    <span class="primary-text">Inventory Management</span>
+                    <span class="secondary-text">View stock levels & manage cash</span>
+                  </div>
+                  <mat-icon class="arrow-icon">arrow_forward</mat-icon>
+                </div>
+              </button>
+            </div>
           </div>
         </mat-card-content>
       </mat-card>
@@ -404,6 +445,11 @@
   <button mat-menu-item>
     <mat-icon>business</mat-icon>
     <span>{{ currentUser?.department }}</span>
+  </button>
+  <mat-divider></mat-divider>
+  <button mat-menu-item (click)="onViewInventory()">
+    <mat-icon>inventory</mat-icon>
+    <span>Inventory Management</span>
   </button>
   <mat-divider></mat-divider>
   <button mat-menu-item (click)="logout()">

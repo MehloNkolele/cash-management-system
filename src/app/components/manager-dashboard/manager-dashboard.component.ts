@@ -549,6 +549,11 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
     this.router.navigate(['/login']);
   }
 
+  navigateToDashboard(): void {
+    // Already on manager dashboard, but could refresh or scroll to top
+    window.scrollTo(0, 0);
+  }
+
   // Test method to create sample requests for demonstration
   private createTestRequestIfNeeded(): void {
     const allRequests = this.cashRequestService.getAllRequests();

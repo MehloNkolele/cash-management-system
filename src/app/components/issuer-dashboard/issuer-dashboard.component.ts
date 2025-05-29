@@ -260,4 +260,9 @@ export class IssuerDashboardComponent implements OnInit {
   formatInventoryNumber(num: number): string {
     return new Intl.NumberFormat('en-ZA').format(num);
   }
+
+  navigateToDashboard(): void {
+    // Already on issuer dashboard, but could refresh or scroll to top
+    window.scrollTo(0, 0);
+  }
 }

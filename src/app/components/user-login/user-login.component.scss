@@ -1,17 +1,88 @@
+// Absa Brand Colors
+:root {
+  --absa-red: #CE0E2D;
+  --absa-dark-blue: #003366;
+  --absa-light-blue: #0066CC;
+  --absa-gold: #FFB81C;
+  --absa-green: #00A651;
+  --absa-gray-dark: #333333;
+  --absa-gray-medium: #666666;
+  --absa-gray-light: #F5F5F5;
+  --absa-white: #FFFFFF;
+}
+
 .login-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--absa-red) 0%, #B91C3C 50%, var(--absa-dark-blue) 100%);
   display: flex;
   flex-direction: column;
+  position: relative;
+
+  // Add subtle pattern overlay for visual interest
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><g fill="none" fill-rule="evenodd"><g fill="%23ffffff" fill-opacity="0.03"><circle cx="30" cy="30" r="2"/></g></svg>');
+    pointer-events: none;
+  }
 }
 
 .app-toolbar {
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  
+  background-color: var(--absa-red) !important;
+  color: var(--absa-white) !important;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  border-bottom: 2px solid rgba(255,255,255,0.1);
+  display: flex;
+  align-items: center;
+  padding: 0 1rem;
+
+  .toolbar-logo {
+    display: flex;
+    align-items: center;
+    margin-right: 1rem;
+
+    .toolbar-absa-logo {
+      height: 32px;
+      width: auto;
+      max-width: 120px;
+      object-fit: contain;
+      filter: brightness(0) invert(1); // Make logo white on red background
+      transition: all 0.3s ease;
+
+      &:hover {
+        transform: scale(1.05);
+        filter: brightness(0) invert(1) drop-shadow(0 2px 4px rgba(255,255,255,0.3));
+      }
+
+      @media (max-width: 768px) {
+        height: 28px;
+        max-width: 100px;
+      }
+
+      @media (max-width: 480px) {
+        height: 24px;
+        max-width: 80px;
+      }
+    }
+  }
+
   .toolbar-title {
-    margin-left: 16px;
     font-size: 1.2rem;
-    font-weight: 500;
+    font-weight: 600;
+    color: var(--absa-white);
+    flex: 1;
+
+    @media (max-width: 768px) {
+      font-size: 1.1rem;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 1rem;
+    }
   }
 }
 
@@ -22,108 +93,267 @@
   align-items: center;
   padding: 2rem;
   gap: 2rem;
-  
+  position: relative;
+  z-index: 1;
+
   @media (max-width: 768px) {
     flex-direction: column;
     padding: 1rem;
+    gap: 1.5rem;
   }
 }
 
 .login-card {
-  max-width: 400px;
+  max-width: 420px;
   width: 100%;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+  background: var(--absa-white);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.15), 0 4px 16px rgba(0,0,0,0.1);
   border-radius: 16px;
-  
+  border: 1px solid rgba(255,255,255,0.2);
+  backdrop-filter: blur(10px);
+  overflow: hidden;
+
   mat-card-header {
     text-align: center;
-    padding-bottom: 1rem;
-    
-    mat-card-title {
-      font-size: 1.5rem;
-      font-weight: 600;
-      color: #333;
-    }
-    
-    mat-card-subtitle {
-      font-size: 0.9rem;
-      color: #666;
-      margin-top: 0.5rem;
+    padding: 2rem 1.5rem 1rem;
+    background: linear-gradient(135deg, var(--absa-white) 0%, var(--absa-gray-light) 100%);
+    border-bottom: 3px solid var(--absa-red);
+  }
+}
+
+// Enhanced accessibility
+@media (prefers-reduced-motion: reduce) {
+  .toolbar-absa-logo {
+    animation: none !important;
+    transition: none !important;
+
+    &:hover {
+      transform: none !important;
     }
   }
-  
+}
+
+.login-card {
+  mat-card-header {
+    mat-card-title {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--absa-dark-blue);
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.02em;
+    }
+
+    mat-card-subtitle {
+      font-size: 0.95rem;
+      color: var(--absa-gray-medium);
+      margin-top: 0.5rem;
+      line-height: 1.4;
+    }
+  }
+
   mat-card-content {
-    padding: 1.5rem;
+    padding: 2rem 1.5rem;
+    background: var(--absa-white);
   }
 }
 
 .full-width {
   width: 100%;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
+
+  // Enhanced form field styling
+  .mat-form-field {
+    .mat-form-field-outline {
+      color: var(--absa-gray-medium);
+    }
+
+    &.mat-focused {
+      .mat-form-field-outline-thick {
+        color: var(--absa-red);
+      }
+
+      .mat-form-field-label {
+        color: var(--absa-red);
+      }
+    }
+
+    .mat-form-field-label {
+      color: var(--absa-gray-medium);
+      font-weight: 500;
+    }
+  }
 }
 
 .login-actions {
   display: flex;
   justify-content: center;
-  margin-top: 1.5rem;
+  margin-top: 2rem;
 }
 
 .login-button {
-  padding: 0.75rem 2rem;
+  padding: 0.875rem 2.5rem;
   font-size: 1rem;
-  font-weight: 500;
+  font-weight: 600;
   border-radius: 8px;
-  
+  background-color: var(--absa-red) !important;
+  color: var(--absa-white) !important;
+  box-shadow: 0 4px 12px rgba(206, 14, 45, 0.3);
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+
+  &:hover:not([disabled]) {
+    background-color: #B91C3C !important;
+    box-shadow: 0 6px 16px rgba(206, 14, 45, 0.4);
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    background-color: var(--absa-gray-medium) !important;
+    color: var(--absa-white) !important;
+    box-shadow: none;
+    opacity: 0.6;
+  }
+
   mat-icon {
     margin-right: 0.5rem;
+    font-size: 1.1rem;
   }
 }
 
 .info-section {
-  max-width: 350px;
+  max-width: 380px;
   width: 100%;
-  
+
   @media (max-width: 768px) {
-    max-width: 400px;
+    max-width: 420px;
   }
 }
 
 .info-card {
-  box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+  background: var(--absa-white);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.15), 0 4px 16px rgba(0,0,0,0.1);
   border-radius: 16px;
-  
+  border: 1px solid rgba(255,255,255,0.2);
+  backdrop-filter: blur(10px);
+  overflow: hidden;
+
   mat-card-header {
     text-align: center;
-    
+    padding: 1.5rem 1.5rem 1rem;
+    background: linear-gradient(135deg, var(--absa-dark-blue) 0%, #004080 100%);
+
     mat-card-title {
-      font-size: 1.25rem;
-      font-weight: 600;
-      color: #333;
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--absa-white);
+      letter-spacing: -0.01em;
     }
   }
-  
+
   mat-card-content {
-    padding: 1.5rem;
+    padding: 2rem 1.5rem;
+    background: var(--absa-white);
+    text-align: left;
   }
 }
 
 .info-item {
   display: flex;
-  align-items: center;
-  margin-bottom: 1rem;
-  
+  align-items: flex-start;
+  margin-bottom: 1.25rem;
+  padding: 0.75rem;
+  border-radius: 8px;
+  background: rgba(206, 14, 45, 0.02);
+  border-left: 3px solid var(--absa-red);
+  transition: all 0.3s ease;
+  text-align: left;
+
+  &:hover {
+    background: rgba(206, 14, 45, 0.05);
+    transform: translateX(4px);
+  }
+
   mat-icon {
     margin-right: 1rem;
-    font-size: 1.25rem;
+    margin-top: 0.1rem;
+    font-size: 1.3rem;
+    color: var(--absa-red);
+    flex-shrink: 0;
   }
-  
+
   span {
-    font-size: 0.9rem;
-    color: #555;
-    line-height: 1.4;
+    font-size: 0.95rem;
+    color: var(--absa-gray-dark);
+    line-height: 1.5;
+    font-weight: 500;
+    text-align: left;
+    flex: 1;
   }
-  
+
   &:last-child {
     margin-bottom: 0;
+  }
+}
+
+// Additional responsive enhancements
+@media (max-width: 480px) {
+  .login-card {
+    margin: 0 0.5rem;
+    border-radius: 12px;
+
+    mat-card-header {
+      padding: 1.5rem 1rem 0.75rem;
+
+      mat-card-title {
+        font-size: 1.4rem;
+      }
+
+      mat-card-subtitle {
+        font-size: 0.9rem;
+      }
+    }
+
+    mat-card-content {
+      padding: 1.5rem 1rem;
+    }
+  }
+
+  .info-card {
+    margin: 0 0.5rem;
+    border-radius: 12px;
+    
+
+    mat-card-header {
+      padding: 1.25rem 1rem 0.75rem;
+
+      mat-card-title {
+        font-size: 1.2rem;
+       
+      }
+    }
+
+    mat-card-content {
+      padding: 1.5rem 1rem;
+    }
+  }
+
+  .info-item {
+    padding: 0.5rem;
+    margin-bottom: 1rem;
+
+    mat-icon {
+      font-size: 1.2rem;
+      margin-right: 0.75rem;
+    }
+
+    span {
+      font-size: 0.9rem;
+    }
+  }
+
+  .login-button {
+    padding: 0.75rem 2rem;
+    font-size: 0.95rem;
   }
 }

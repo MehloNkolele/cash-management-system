@@ -18,7 +18,8 @@ import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatDividerModule } from '@angular/material/divider';
 
 import { User } from '../../models/user.model';
-import { CashRequest, RequestStatus, InventoryValidationResult } from '../../models/cash-request.model';
+import { CashRequest, RequestStatus } from '../../models/cash-request.model';
+import { NoteSeries } from '../../models/inventory.model';
 import { UserService } from '../../services/user.service';
 import { CashRequestService } from '../../services/cash-request.service';
 import { InventoryService } from '../../services/inventory.service';
@@ -65,8 +66,7 @@ export class RequestDetailsComponent implements OnInit {
   returnDateValidation: { isValid: boolean; message: string } = { isValid: true, message: '' };
   timeUntilDeadline: { isOverdue: boolean; hoursRemaining: number; minutesRemaining: number; message: string } | null = null;
 
-  // Inventory validation
-  inventoryValidation: InventoryValidationResult | null = null;
+
 
   constructor(
     private route: ActivatedRoute,
@@ -116,24 +116,11 @@ export class RequestDetailsComponent implements OnInit {
       this.timeUntilDeadline = this.timeUtilityService.getTimeUntilDeadline(this.request.expectedReturnDate);
     }
 
-    // Load inventory validation for issuers
-    if (this.isIssuer) {
-      this.inventoryValidation = this.inventoryService.validateCashRequest(this.request.bankNotes);
-    }
+
   }
 
   approveRequest(): void {
     if (!this.request || !this.currentUser) return;
-
-    // Check inventory validation first
-    if (this.inventoryValidation && this.inventoryValidation.errors.length > 0) {
-      this.snackBar.open(
-        'Cannot approve request: ' + this.inventoryValidation.errors.join(', '),
-        'Close',
-        { duration: 5000 }
-      );
-      return;
-    }
 
     try {
       // Use the default return date (today at 3PM)
@@ -338,6 +325,99 @@ export class RequestDetailsComponent implements OnInit {
     } else {
       this.router.navigate(['/dashboard']);
     }
+  }
+
+  navigateToDashboard(): void {
+    if (this.userService.isManager()) {
+      this.router.navigate(['/manager-dashboard']);
+    } else if (this.userService.isIssuer()) {
+      this.router.navigate(['/issuer-dashboard']);
+    } else {
+      this.router.navigate(['/dashboard']);
+    }
+  }
+
+  // New methods for the redesigned template
+  hasProcessingDetails(): boolean {
+    return !!(this.request?.issuedBy ||
+              this.request?.actualReturnDate ||
+              this.request?.cashReceivedBy ||
+              this.request?.cashCountedBeforeIssuance !== undefined ||
+              this.request?.cashCountedOnReturn !== undefined);
+  }
+
+  getSeriesLabel(series: NoteSeries): string {
+    const seriesLabels = {
+      [NoteSeries.MANDELA]: 'Mandela Series',
+      [NoteSeries.BIG_5]: 'Big 5 Series',
+      [NoteSeries.COMMEMORATIVE]: 'Commemorative',
+      [NoteSeries.V6]: 'V6 Series'
+    };
+    return seriesLabels[series] || series;
+  }
+
+  // Timeline methods
+  isStepCompleted(status: string): boolean {
+    const statusOrder = [RequestStatus.PENDING, RequestStatus.APPROVED, RequestStatus.ISSUED, RequestStatus.RETURNED, RequestStatus.COMPLETED];
+    const currentIndex = statusOrder.indexOf(this.request?.status || RequestStatus.PENDING);
+    const stepIndex = statusOrder.indexOf(status as RequestStatus);
+
+    // Special handling for rejected/cancelled states
+    if (this.request?.status === RequestStatus.REJECTED || this.request?.status === RequestStatus.CANCELLED) {
+      return stepIndex === 0; // Only submitted step is completed
+    }
+
+    return currentIndex > stepIndex;
+  }
+
+  getTimelineIcon(status: string): string {
+    const icons: { [key: string]: string } = {
+      [RequestStatus.PENDING]: 'send',
+      [RequestStatus.APPROVED]: 'check_circle',
+      [RequestStatus.ISSUED]: 'payments',
+      [RequestStatus.RETURNED]: 'assignment_return',
+      [RequestStatus.COMPLETED]: 'done_all'
+    };
+
+    if (this.isStepCompleted(status)) {
+      return 'check_circle';
+    } else if (this.request?.status === status) {
+      return icons[status] || 'radio_button_unchecked';
+    } else {
+      return 'radio_button_unchecked';
+    }
+  }
+
+  // Action methods for header buttons
+  printRequest(): void {
+    window.print();
+  }
+
+  exportRequest(): void {
+    // Create a simple text export
+    const exportData = {
+      requestId: this.request?.id,
+      requester: this.request?.requesterName,
+      department: this.request?.department,
+      status: this.request?.status,
+      dateRequested: this.request?.dateRequested,
+      totalAmount: this.calculateTotalAmount(),
+      bankNotes: this.request?.bankNotes,
+      coinsRequested: this.request?.coinsRequested,
+      dyePackRequired: this.request?.dyePackRequired
+    };
+
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `cash-request-${this.request?.id}.json`;
+    link.click();
+
+    URL.revokeObjectURL(url);
+    this.snackBar.open('Request exported successfully', 'Close', { duration: 3000 });
   }
 
   /**

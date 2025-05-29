@@ -16,6 +16,40 @@
   top: 0;
   z-index: 1000;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  display: flex;
+  align-items: center;
+  padding: 0 1rem;
+
+  .toolbar-logo {
+    display: flex;
+    align-items: center;
+    margin-right: 1rem;
+    margin-left: 0.5rem;
+
+    .toolbar-absa-logo {
+      height: 32px;
+      width: auto;
+      max-width: 120px;
+      object-fit: contain;
+      filter: brightness(0) invert(1); // Make logo white on red background
+      transition: all 0.3s ease;
+
+      &:hover {
+        transform: scale(1.05);
+        filter: brightness(0) invert(1) drop-shadow(0 2px 4px rgba(255,255,255,0.3));
+      }
+
+      @media (max-width: 768px) {
+        height: 28px;
+        max-width: 100px;
+      }
+
+      @media (max-width: 480px) {
+        height: 24px;
+        max-width: 80px;
+      }
+    }
+  }
 
   .toolbar-title {
     font-size: 1.2rem;
@@ -24,6 +58,18 @@
 
   .toolbar-spacer {
     flex: 1 1 auto;
+  }
+}
+
+// Enhanced accessibility
+@media (prefers-reduced-motion: reduce) {
+  .toolbar-absa-logo {
+    animation: none !important;
+    transition: none !important;
+
+    &:hover {
+      transform: none !important;
+    }
   }
 }
 
