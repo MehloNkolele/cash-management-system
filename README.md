@@ -1,59 +1,185 @@
-# CashManagementSystem
+# Cash Management System
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 19.2.8.
+<div align="center">
+  <img src="public/assets/images/Absa_logo.png" alt="Absa Logo" width="200">
+  <br>
+  <h3>Secure Cash Management Solution</h3>
+</div>
 
-## Development server
+## Overview
 
-To start a local development server, run:
+The Cash Management System is a comprehensive Angular-based application designed to streamline and secure the process of cash handling, distribution, and tracking within an organization. This system provides end-to-end management of cash requests, approvals, issuance, returns, and inventory tracking with role-based access controls.
+
+## Features
+
+- **User Role Management**:
+  - **Requesters**: Submit cash requests with detailed denomination breakdowns
+  - **Issuers**: Process cash issuance and returns
+  - **Managers**: Approve requests and oversee operations
+  - **Administrators**: Configure system settings and manage users
+
+- **Cash Request Lifecycle**:
+  - Request creation with denomination specifications
+  - Approval workflow
+  - Cash issuance tracking
+  - Return processing
+  - Automatic and manual rejection handling
+
+- **Inventory Management**:
+  - Real-time tracking of available cash by denomination and series
+  - Low stock alerts
+  - Cash transaction history
+  - Series-based inventory management (Mandela, Big 5, etc.)
+
+- **Notifications & Alerts**:
+  - Automated notifications for request status changes
+  - Low inventory alerts
+  - Pending approval reminders
+  - Overdue return notifications
+
+- **Reporting & Dashboards**:
+  - Role-specific dashboards
+  - Request summary visualizations
+  - Cash flow reporting
+  - System activity logs
+
+- **Security Features**:
+  - Role-based access controls
+  - Transaction audit logging
+  - Dye pack tracking for security
+  - Cash verification protocols
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js (v16.x or later)
+- npm (v8.x or later)
+- Git
+
+### Installation
+
+1. Clone the repository:
 
 ```bash
-ng serve
+git clone https://github.com/MehloNkolele/cash-management-system.git
+cd cash-management-system
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+2. Install dependencies:
 
 ```bash
-ng generate component component-name
+npm install
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+3. Start the development server:
 
 ```bash
-ng generate --help
+npm start
 ```
 
-## Building
+4. Navigate to `http://localhost:4200/` in your browser to access the application.
 
-To build the project run:
+## Project Structure
+
+```
+src/
+  ├── app/
+  │   ├── components/           # UI components
+  │   │   ├── add-cash-modal/
+  │   │   ├── alerts-overview/
+  │   │   ├── cash-request-form/
+  │   │   ├── dashboard/
+  │   │   ├── inventory-management/
+  │   │   └── ...
+  │   ├── models/               # Data models & interfaces
+  │   │   ├── cash-request.model.ts
+  │   │   ├── inventory.model.ts
+  │   │   ├── notification.model.ts
+  │   │   ├── system-log.model.ts
+  │   │   └── user.model.ts
+  │   ├── services/             # Business logic services
+  │   │   ├── cash-request.service.ts
+  │   │   ├── inventory.service.ts
+  │   │   ├── notification.service.ts
+  │   │   └── ...
+  │   └── ...
+  └── styles/                   # Global styling
+```
+
+## Usage
+
+### User Login
+
+- Access the application at `http://localhost:4200/`
+- Login with your credentials based on your assigned role
+
+### Creating Cash Requests
+
+1. Navigate to the dashboard
+2. Click "New Request"
+3. Fill in the required details including denominations needed
+4. Submit for approval
+
+### Approving Requests (Managers)
+
+1. Access the manager dashboard
+2. View pending requests in the approval queue
+3. Review request details and inventory availability
+4. Approve or reject with comments
+
+### Cash Issuance (Issuers)
+
+1. View approved requests in the issuance queue
+2. Verify cash before issuance
+3. Record issuance details and recipient information
+
+### Processing Returns
+
+1. Select active requests with issued cash
+2. Count and verify returned cash
+3. Record any discrepancies
+4. Complete the return process
+
+## Development
+
+### Available Scripts
+
+- `npm start` - Start the development server
+- `npm run build` - Build the production application
+- `npm test` - Run unit tests
+- `npm run watch` - Build in watch mode for development
+
+### Code Generation
+
+Use Angular CLI to generate components:
 
 ```bash
-ng build
+ng generate component components/new-component-name
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+## Technologies
 
-## Running unit tests
+- **Angular**: Frontend framework (v19.2)
+- **Angular Material**: UI component library
+- **RxJS**: Reactive programming library
+- **TypeScript**: Programming language
+- **Karma & Jasmine**: Testing framework
 
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
+## Contributing
 
-```bash
-ng test
-```
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-## Running end-to-end tests
+## License
 
-For end-to-end (e2e) testing, run:
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-```bash
-ng e2e
-```
+## Contact
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+Project Maintainer: Mehlo Nkolele - [GitHub Profile](https://github.com/MehloNkolele)
 
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+Project Repository: [https://github.com/MehloNkolele/cash-management-system.git](https://github.com/MehloNkolele/cash-management-system.git)
