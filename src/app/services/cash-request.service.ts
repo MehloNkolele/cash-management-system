@@ -1,10 +1,11 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { CashRequest, RequestStatus, BankNote, CashRequestSummary } from '../models/cash-request.model';
+import { CashRequest, RequestStatus, BankNote, CashRequestSummary, RejectionResult, NoteDenomination } from '../models/cash-request.model';
 import { LocalStorageService } from './local-storage.service';
 import { NotificationService } from './notification.service';
 import { UserService } from './user.service';
 import { SystemLogService } from './system-log.service';
+import { InventoryService } from './inventory.service';
 
 @Injectable({
   providedIn: 'root'
@@ -19,7 +20,8 @@ export class CashRequestService {
     private localStorageService: LocalStorageService,
     private notificationService: NotificationService,
     private userService: UserService,
-    private systemLogService: SystemLogService
+    private systemLogService: SystemLogService,
+    private inventoryService: InventoryService
   ) {
     this.loadRequests();
     // Set this service in the notification service to avoid circular dependency
@@ -86,6 +88,16 @@ export class CashRequestService {
       ...requestData
     };
 
+    // Check for automatic rejection due to insufficient inventory
+    const rejectionResult = this.checkForAutoRejection(newRequest.bankNotes);
+    if (rejectionResult.isRejected) {
+      newRequest.status = RequestStatus.REJECTED;
+      newRequest.rejectionReason = rejectionResult.reason;
+      newRequest.rejectedBy = 'System (Automatic)';
+      newRequest.rejectedDate = new Date();
+      newRequest.isAutoRejected = true;
+    }
+
     const requests = this.getAllRequests();
     requests.push(newRequest);
     this.saveRequests(requests);
@@ -93,8 +105,16 @@ export class CashRequestService {
     // Log the cash request creation
     this.systemLogService.logCashRequest(newRequest, 'Created');
 
-    // Send notification to issuers
-    this.notificationService.notifyNewRequest(newRequest);
+    if (newRequest.status === RequestStatus.REJECTED) {
+      // Log the automatic rejection
+      this.systemLogService.logCashRequest(newRequest, 'Auto-Rejected');
+
+      // Send rejection notifications
+      this.notificationService.notifyRequestRejected(newRequest, rejectionResult);
+    } else {
+      // Send notification to issuers for pending requests
+      this.notificationService.notifyNewRequest(newRequest);
+    }
 
     return newRequest;
   }
@@ -124,7 +144,8 @@ export class CashRequestService {
       [RequestStatus.ISSUED]: 'Issued',
       [RequestStatus.RETURNED]: 'Returned',
       [RequestStatus.COMPLETED]: 'Completed',
-      [RequestStatus.CANCELLED]: 'Cancelled'
+      [RequestStatus.CANCELLED]: 'Cancelled',
+      [RequestStatus.REJECTED]: 'Rejected'
     };
 
     if (updates.status && updates.status !== oldStatus) {
@@ -194,6 +215,78 @@ export class CashRequestService {
     return this.updateRequest(id, updates);
   }
 
+  rejectRequest(id: string, reason: string, rejectedBy: string): CashRequest | null {
+    const updates: Partial<CashRequest> = {
+      status: RequestStatus.REJECTED,
+      rejectionReason: reason,
+      rejectedBy: rejectedBy,
+      rejectedDate: new Date(),
+      isAutoRejected: false
+    };
+
+    const request = this.updateRequest(id, updates);
+
+    if (request) {
+      // Send rejection notifications
+      const rejectionResult: RejectionResult = {
+        isRejected: true,
+        reason: reason,
+        insufficientDenominations: [],
+        suggestedAlternatives: ['Contact the manager for alternative arrangements', 'Reduce the requested amount', 'Try again later when inventory is replenished']
+      };
+
+      this.notificationService.notifyRequestRejected(request, rejectionResult);
+    }
+
+    return request;
+  }
+
+  private checkForAutoRejection(bankNotes: BankNote[]): RejectionResult {
+    const insufficientDenominations: RejectionResult['insufficientDenominations'] = [];
+
+    for (const note of bankNotes) {
+      if (note.quantity > 0) {
+        const available = this.inventoryService.getAvailableQuantity(note.denomination);
+        if (note.quantity > available) {
+          insufficientDenominations.push({
+            denomination: note.denomination,
+            requested: note.quantity,
+            available: available,
+            shortage: note.quantity - available
+          });
+        }
+      }
+    }
+
+    if (insufficientDenominations.length > 0) {
+      const denominationList = insufficientDenominations
+        .map(d => `R${d.denomination} (requested: ${d.requested}, available: ${d.available})`)
+        .join(', ');
+
+      const reason = `Insufficient inventory for the following denominations: ${denominationList}`;
+
+      const suggestedAlternatives = [
+        'Reduce the quantities for the insufficient denominations',
+        'Contact the manager for inventory replenishment',
+        'Consider alternative denominations if available',
+        'Submit a smaller request and follow up later'
+      ];
+
+      return {
+        isRejected: true,
+        reason,
+        insufficientDenominations,
+        suggestedAlternatives
+      };
+    }
+
+    return {
+      isRejected: false,
+      reason: '',
+      insufficientDenominations: []
+    };
+  }
+
   calculateRequestSummary(bankNotes: BankNote[]): CashRequestSummary {
     const totalAmount = bankNotes.reduce((sum, note) => sum + (note.denomination * note.quantity), 0);
     return {
@@ -218,6 +311,10 @@ export class CashRequestService {
         break;
       case RequestStatus.COMPLETED:
         this.notificationService.notifyRequestCompleted(request);
+        break;
+      case RequestStatus.REJECTED:
+        // Rejection notifications are handled in the rejectRequest method
+        // to include proper rejection details
         break;
     }
   }

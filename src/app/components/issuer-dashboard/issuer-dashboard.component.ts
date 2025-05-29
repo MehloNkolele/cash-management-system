@@ -15,10 +15,11 @@ import { MatDividerModule } from '@angular/material/divider';
 import { NotificationPanelComponent } from '../notification-panel/notification-panel.component';
 
 import { User } from '../../models/user.model';
-import { CashRequest, RequestStatus } from '../../models/cash-request.model';
+import { CashRequest, RequestStatus, InventoryAvailability, InventoryValidationResult } from '../../models/cash-request.model';
 import { Notification } from '../../models/notification.model';
 import { UserService } from '../../services/user.service';
 import { CashRequestService } from '../../services/cash-request.service';
+import { InventoryService } from '../../services/inventory.service';
 import { NotificationService } from '../../services/notification.service';
 import { SystemLogService } from '../../services/system-log.service';
 
@@ -53,11 +54,17 @@ export class IssuerDashboardComponent implements OnInit {
   unreadNotificationCount = 0;
   selectedTabIndex = 0;
 
-  displayedColumns: string[] = ['requester', 'department', 'amount', 'dateRequested', 'status', 'actions'];
+  // Inventory data for approvers
+  inventoryAvailability: InventoryAvailability[] = [];
+  totalInventoryValue: number = 0;
+  totalInventoryNotes: number = 0;
+
+  displayedColumns: string[] = ['requester', 'department', 'amount', 'inventory', 'dateRequested', 'status', 'actions'];
 
   constructor(
     private userService: UserService,
     private cashRequestService: CashRequestService,
+    private inventoryService: InventoryService,
     private notificationService: NotificationService,
     private systemLogService: SystemLogService,
     private router: Router
@@ -72,6 +79,12 @@ export class IssuerDashboardComponent implements OnInit {
 
     this.loadRequests();
     this.loadNotifications();
+    this.loadInventoryData();
+
+    // Subscribe to notification updates for real-time updates
+    this.notificationService.notifications$.subscribe(() => {
+      this.loadNotifications();
+    });
 
     // Set up automatic refresh every 30 seconds
     setInterval(() => {
@@ -89,7 +102,18 @@ export class IssuerDashboardComponent implements OnInit {
     if (this.currentUser) {
       this.notifications = this.notificationService.getNotificationsForUser(this.currentUser.id);
       this.unreadNotificationCount = this.notificationService.getUnreadNotificationsForUser(this.currentUser.id).length;
+
+
     }
+  }
+
+  private loadInventoryData(): void {
+    // Load detailed inventory data for approvers
+    this.inventoryAvailability = this.inventoryService.getInventoryAvailabilityForApprovers();
+
+    const inventorySummary = this.inventoryService.getInventorySummary();
+    this.totalInventoryValue = inventorySummary.totalValue;
+    this.totalInventoryNotes = inventorySummary.totalNotes;
   }
 
   viewRequestDetails(request: CashRequest): void {
@@ -110,6 +134,8 @@ export class IssuerDashboardComponent implements OnInit {
         return 'primary';
       case RequestStatus.CANCELLED:
         return 'warn';
+      case RequestStatus.REJECTED:
+        return 'warn';
       default:
         return '';
     }
@@ -129,6 +155,8 @@ export class IssuerDashboardComponent implements OnInit {
         return 'done_all';
       case RequestStatus.CANCELLED:
         return 'cancel';
+      case RequestStatus.REJECTED:
+        return 'block';
       default:
         return 'help';
     }
@@ -181,6 +209,7 @@ export class IssuerDashboardComponent implements OnInit {
   refreshData(): void {
     this.loadRequests();
     this.loadNotifications();
+    this.loadInventoryData();
   }
 
   navigateToTab(tabIndex: number): void {
@@ -198,5 +227,37 @@ export class IssuerDashboardComponent implements OnInit {
   onTabChange(index: number): void {
     console.log('Tab changed to:', index);
     this.selectedTabIndex = index;
+  }
+
+  onViewInventory(): void {
+    this.router.navigate(['/inventory-management']);
+  }
+
+  // Get inventory validation for a specific request
+  getInventoryValidation(request: CashRequest): InventoryValidationResult {
+    return this.inventoryService.validateCashRequest(request.bankNotes);
+  }
+
+  // Check if request has inventory warnings
+  hasInventoryWarnings(request: CashRequest): boolean {
+    const validation = this.getInventoryValidation(request);
+    return validation.warnings.length > 0;
+  }
+
+  // Check if request has inventory errors
+  hasInventoryErrors(request: CashRequest): boolean {
+    const validation = this.getInventoryValidation(request);
+    return validation.errors.length > 0;
+  }
+
+  // Get inventory status for a denomination
+  getInventoryStatusForDenomination(denomination: number): string {
+    const availability = this.inventoryAvailability.find(item => item.denomination === denomination);
+    return availability?.status || 'unknown';
+  }
+
+  // Format inventory numbers
+  formatInventoryNumber(num: number): string {
+    return new Intl.NumberFormat('en-ZA').format(num);
   }
 }

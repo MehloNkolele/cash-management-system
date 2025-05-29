@@ -1,7 +1,7 @@
 import { Injectable, Inject, forwardRef } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { Notification, NotificationType } from '../models/notification.model';
-import { CashRequest } from '../models/cash-request.model';
+import { CashRequest, RejectionResult } from '../models/cash-request.model';
 import { LocalStorageService } from './local-storage.service';
 import { UserService } from './user.service';
 import { TimeUtilityService } from './time-utility.service';
@@ -85,6 +85,9 @@ export class NotificationService {
     notifications.push(newNotification);
     this.saveNotifications(notifications);
 
+    // Trigger the observable to notify subscribers
+    this.notificationsSubject.next(notifications);
+
     return newNotification;
   }
 
@@ -95,6 +98,7 @@ export class NotificationService {
     if (notification) {
       notification.isRead = true;
       this.saveNotifications(notifications);
+      this.notificationsSubject.next(notifications);
     }
   }
 
@@ -112,6 +116,7 @@ export class NotificationService {
 
     if (updated) {
       this.saveNotifications(notifications);
+      this.notificationsSubject.next(notifications);
     }
   }
 
@@ -124,6 +129,7 @@ export class NotificationService {
     });
 
     this.saveNotifications(notifications);
+    this.notificationsSubject.next(notifications);
   }
 
   deleteNotification(notificationId: string): { success: boolean; notification?: Notification } {
@@ -376,6 +382,70 @@ export class NotificationService {
         }
       });
     }
+  }
+
+  notifyRequestRejected(request: CashRequest, rejectionResult: RejectionResult): void {
+    const totalAmount = this.formatAmount(request);
+
+    // Create detailed rejection message for requester
+    let requesterMessage = `Your cash request for ${totalAmount} has been rejected.`;
+
+    if (request.isAutoRejected) {
+      requesterMessage += ` Reason: ${rejectionResult.reason}`;
+
+      if (rejectionResult.suggestedAlternatives && rejectionResult.suggestedAlternatives.length > 0) {
+        requesterMessage += `\n\nSuggested alternatives:\n${rejectionResult.suggestedAlternatives.map(alt => `• ${alt}`).join('\n')}`;
+      }
+
+      if (rejectionResult.insufficientDenominations.length > 0) {
+        requesterMessage += `\n\nInventory shortages:\n${rejectionResult.insufficientDenominations.map(d =>
+          `• R${d.denomination}: Requested ${d.requested}, Available ${d.available} (Short by ${d.shortage})`
+        ).join('\n')}`;
+      }
+    } else {
+      requesterMessage += ` Reason: ${request.rejectionReason || 'No reason provided'}`;
+      requesterMessage += `\n\nRejected by: ${request.rejectedBy}`;
+    }
+
+    // Notify requester
+    this.createNotification({
+      type: NotificationType.REQUEST_REJECTED,
+      title: request.isAutoRejected ? 'Request Auto-Rejected' : 'Request Rejected',
+      message: requesterMessage,
+      recipientId: request.requesterId,
+      requestId: request.id
+    });
+
+    // Create message for issuers and managers
+    let staffMessage = `Cash request by ${request.requesterName} for ${totalAmount} has been ${request.isAutoRejected ? 'automatically ' : ''}rejected.`;
+
+    if (request.isAutoRejected) {
+      staffMessage += ` Reason: Insufficient inventory.`;
+
+      if (rejectionResult.insufficientDenominations.length > 0) {
+        staffMessage += `\n\nInventory shortages:\n${rejectionResult.insufficientDenominations.map(d =>
+          `• R${d.denomination}: Requested ${d.requested}, Available ${d.available}`
+        ).join('\n')}`;
+      }
+    } else {
+      staffMessage += ` Reason: ${request.rejectionReason || 'No reason provided'}`;
+      staffMessage += `\nRejected by: ${request.rejectedBy}`;
+    }
+
+    // Notify all issuers and managers
+    const issuers = this.userService.getIssuers();
+    const managers = this.userService.getManagers();
+    const recipients = [...issuers, ...managers];
+
+    recipients.forEach(recipient => {
+      this.createNotification({
+        type: NotificationType.REQUEST_REJECTED,
+        title: request.isAutoRejected ? 'Request Auto-Rejected' : 'Request Rejected',
+        message: staffMessage,
+        recipientId: recipient.id,
+        requestId: request.id
+      });
+    });
   }
 
   notifyOverdueReturn(request: CashRequest): void {

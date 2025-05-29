@@ -18,9 +18,10 @@ import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatDividerModule } from '@angular/material/divider';
 
 import { User } from '../../models/user.model';
-import { CashRequest, RequestStatus } from '../../models/cash-request.model';
+import { CashRequest, RequestStatus, InventoryValidationResult } from '../../models/cash-request.model';
 import { UserService } from '../../services/user.service';
 import { CashRequestService } from '../../services/cash-request.service';
+import { InventoryService } from '../../services/inventory.service';
 import { TimeUtilityService } from '../../services/time-utility.service';
 
 @Component({
@@ -64,11 +65,15 @@ export class RequestDetailsComponent implements OnInit {
   returnDateValidation: { isValid: boolean; message: string } = { isValid: true, message: '' };
   timeUntilDeadline: { isOverdue: boolean; hoursRemaining: number; minutesRemaining: number; message: string } | null = null;
 
+  // Inventory validation
+  inventoryValidation: InventoryValidationResult | null = null;
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private userService: UserService,
     private cashRequestService: CashRequestService,
+    private inventoryService: InventoryService,
     private snackBar: MatSnackBar,
     private dialog: MatDialog,
     private timeUtilityService: TimeUtilityService
@@ -110,14 +115,36 @@ export class RequestDetailsComponent implements OnInit {
     if (this.request.status === RequestStatus.ISSUED && this.request.expectedReturnDate) {
       this.timeUntilDeadline = this.timeUtilityService.getTimeUntilDeadline(this.request.expectedReturnDate);
     }
+
+    // Load inventory validation for issuers
+    if (this.isIssuer) {
+      this.inventoryValidation = this.inventoryService.validateCashRequest(this.request.bankNotes);
+    }
   }
 
   approveRequest(): void {
     if (!this.request || !this.currentUser) return;
 
+    // Check inventory validation first
+    if (this.inventoryValidation && this.inventoryValidation.errors.length > 0) {
+      this.snackBar.open(
+        'Cannot approve request: ' + this.inventoryValidation.errors.join(', '),
+        'Close',
+        { duration: 5000 }
+      );
+      return;
+    }
+
     try {
       // Use the default return date (today at 3PM)
       const returnDateAt3PM = this.timeUtilityService.setTimeTo3PM(this.expectedReturnDate);
+
+      // Process inventory deduction
+      this.inventoryService.processCashRequestApproval(
+        this.request.bankNotes,
+        this.request.id,
+        this.currentUser.fullName
+      );
 
       this.cashRequestService.approveRequest(
         this.request.id,
@@ -131,8 +158,12 @@ export class RequestDetailsComponent implements OnInit {
         { duration: 5000 }
       );
       this.loadRequest(this.request.id);
-    } catch (error) {
-      this.snackBar.open('Error approving request', 'Close', { duration: 3000 });
+    } catch (error: any) {
+      this.snackBar.open(
+        error.message || 'Error approving request',
+        'Close',
+        { duration: 5000 }
+      );
     }
   }
 
@@ -196,6 +227,29 @@ export class RequestDetailsComponent implements OnInit {
     }
   }
 
+  rejectRequest(): void {
+    if (!this.request || !this.currentUser) return;
+
+    const reason = prompt('Please provide a reason for rejection:');
+    if (reason === null || reason.trim() === '') {
+      this.snackBar.open('Rejection reason is required', 'Close', { duration: 3000 });
+      return;
+    }
+
+    try {
+      this.cashRequestService.rejectRequest(this.request.id, reason.trim(), this.currentUser.fullName);
+
+      this.snackBar.open('Request rejected successfully!', 'Close', { duration: 3000 });
+      this.loadRequest(this.request.id);
+    } catch (error: any) {
+      this.snackBar.open(
+        error.message || 'Error rejecting request',
+        'Close',
+        { duration: 3000 }
+      );
+    }
+  }
+
   calculateTotalAmount(): number {
     if (!this.request) return 0;
     return this.request.bankNotes.reduce((total, note) => total + (note.denomination * note.quantity), 0);
@@ -219,6 +273,8 @@ export class RequestDetailsComponent implements OnInit {
         return 'primary';
       case RequestStatus.CANCELLED:
         return 'warn';
+      case RequestStatus.REJECTED:
+        return 'warn';
       default:
         return '';
     }
@@ -238,6 +294,8 @@ export class RequestDetailsComponent implements OnInit {
         return 'done_all';
       case RequestStatus.CANCELLED:
         return 'cancel';
+      case RequestStatus.REJECTED:
+        return 'block';
       default:
         return 'help';
     }
@@ -263,6 +321,13 @@ export class RequestDetailsComponent implements OnInit {
     return this.isIssuer &&
            !!this.request?.status &&
            [RequestStatus.PENDING, RequestStatus.APPROVED].includes(this.request.status);
+  }
+
+  canReject(): boolean {
+    // Only managers can manually reject requests at any stage
+    return this.userService.isManager() &&
+           !!this.request?.status &&
+           [RequestStatus.PENDING, RequestStatus.APPROVED, RequestStatus.ISSUED].includes(this.request.status);
   }
 
   goBack(): void {
@@ -308,5 +373,11 @@ export class RequestDetailsComponent implements OnInit {
     return this.timeUntilDeadline?.message || '';
   }
 
-
+  /**
+   * Get manager name for suggestions
+   */
+  getManagerName(): string {
+    const managers = this.userService.getManagers();
+    return managers.length > 0 ? managers[0].fullName : 'Manager';
+  }
 }

@@ -46,19 +46,109 @@
             </div>
           </div>
 
+          <!-- Smart Mode Toggle -->
+          <div class="form-section">
+            <div class="smart-mode-section">
+              <mat-slide-toggle
+                [(ngModel)]="smartMode"
+                (change)="onSmartModeToggle($event.checked)"
+                color="primary">
+                <span class="toggle-label">
+                  <mat-icon>auto_awesome</mat-icon>
+                  Smart Series Selection
+                </span>
+              </mat-slide-toggle>
+              <p class="smart-mode-description" *ngIf="smartMode">
+                <mat-icon>info</mat-icon>
+                Smart mode automatically recommends the best available note series for each denomination and provides real-time availability feedback.
+              </p>
+            </div>
+          </div>
+
           <!-- Cash Requirements -->
           <div class="form-section">
             <h3>Bank Note Denomination and Quantity</h3>
+
+            <!-- Availability Warnings -->
+            <mat-card class="warning-card" *ngIf="hasAvailabilityWarnings()">
+              <mat-card-content>
+                <div class="warning-header">
+                  <mat-icon color="warn">warning</mat-icon>
+                  <span>Availability Warnings</span>
+                </div>
+                <ul class="warning-list">
+                  <li *ngFor="let warning of getAvailabilityWarnings()" class="warning-item">
+                    {{ warning }}
+                  </li>
+                </ul>
+              </mat-card-content>
+            </mat-card>
+
             <div class="denominations-grid">
               <div *ngFor="let denom of denominations" class="denomination-item">
+                <div class="denomination-header">
+                  <span class="denomination-label">{{ denom.label }}</span>
+                  <mat-chip
+                    [class]="getInventoryStatusClass(getInventoryStatus(denom.value))"
+                    class="inventory-status-chip">
+                    <mat-icon>{{ getInventoryStatus(denom.value) === InventoryStatus.AVAILABLE ? 'check_circle' :
+                                 getInventoryStatus(denom.value) === InventoryStatus.LOW_STOCK ? 'warning' : 'error' }}</mat-icon>
+                    <span>{{ getInventoryStatusLabel(getInventoryStatus(denom.value)) }}</span>
+                  </mat-chip>
+                </div>
+
+                <!-- Series Selection (Smart Mode) -->
+                <div class="series-selection" *ngIf="smartMode">
+                  <div class="series-header">
+                    <button
+                      mat-button
+                      type="button"
+                      (click)="toggleSeriesSelection(denom.value)"
+                      class="series-toggle-btn">
+                      <mat-icon>{{ showSeriesSelection[denom.value] ? 'expand_less' : 'expand_more' }}</mat-icon>
+                      {{ getSelectedSeriesLabel(denom.value) }}
+                    </button>
+                  </div>
+
+                  <div class="series-options" *ngIf="showSeriesSelection[denom.value]">
+                    <mat-radio-group
+                      [(ngModel)]="selectedSeries[denom.value]"
+                      (change)="onSeriesChange(denom.value, $event.value)">
+                      <div *ngFor="let seriesOption of getSeriesOptions(denom.value)"
+                           class="series-option"
+                           [class]="getSeriesStatusClass(seriesOption)">
+                        <mat-radio-button [value]="seriesOption.series">
+                          <div class="series-info">
+                            <div class="series-name">
+                              <span>{{ getSeriesLabel(seriesOption.series) }}</span>
+                              <mat-chip class="recommended-chip" *ngIf="isSeriesRecommended(seriesOption)">
+                                <mat-icon>star</mat-icon>
+                                Recommended
+                              </mat-chip>
+                            </div>
+                            <div class="series-availability">
+                              <mat-icon [color]="seriesOption.status === InventoryStatus.AVAILABLE ? 'primary' :
+                                                 seriesOption.status === InventoryStatus.LOW_STOCK ? 'accent' : 'warn'">
+                                {{ getSeriesStatusIcon(seriesOption) }}
+                              </mat-icon>
+                              <span class="availability-text">{{ seriesOption.available }} available</span>
+                            </div>
+                          </div>
+                        </mat-radio-button>
+                      </div>
+                    </mat-radio-group>
+                  </div>
+                </div>
+
                 <mat-form-field appearance="outline">
-                  <mat-label>{{ denom.label }}</mat-label>
+                  <mat-label>Quantity</mat-label>
                   <input
                     matInput
                     type="number"
                     min="0"
                     [value]="getQuantity(denom.value)"
                     (input)="updateQuantity(denom.value, +$any($event.target).value)"
+                    [disabled]="getInventoryStatus(denom.value) === InventoryStatus.OUT_OF_STOCK"
                     placeholder="0">
                 </mat-form-field>
                 <div class="denomination-total">
@@ -82,6 +172,24 @@
               <div class="coins-info" *ngIf="coinsRequested">
                 <mat-icon color="primary">check_circle</mat-icon>
                 <span>Coins will be provided with your cash request</span>
+              </div>
+            </div>
+
+            <!-- Dye Pack Toggle Section -->
+            <div class="dye-pack-section">
+              <mat-slide-toggle
+                [(ngModel)]="dyePackRequired"
+                name="dyePackRequired"
+                (change)="onDyePackToggleChange($event.checked)"
+                color="primary">
+                <span class="toggle-label">
+                  <mat-icon>security</mat-icon>
+                  Dye Pack Required
+                </span>
+              </mat-slide-toggle>
+              <div class="dye-pack-info" *ngIf="dyePackRequired">
+                <mat-icon color="primary">check_circle</mat-icon>
+                <span>Dye pack will be included with your cash request</span>
               </div>
             </div>
 
@@ -127,7 +235,7 @@
           </div>
 
           <!-- Summary Section -->
-          <div class="form-section" *ngIf="getSelectedNotes().length > 0 || coinsRequested">
+          <div class="form-section" *ngIf="getSelectedNotes().length > 0 || coinsRequested || dyePackRequired">
             <h3>Request Summary</h3>
             <mat-card class="summary-card">
               <mat-card-content>
@@ -142,11 +250,19 @@
                   </span>
                   <span class="note-total">✓</span>
                 </div>
+                <div class="summary-item dye-pack-summary-item" *ngIf="dyePackRequired">
+                  <span class="note-info">
+                    <mat-icon>security</mat-icon>
+                    Dye Pack
+                  </span>
+                  <span class="note-total">✓</span>
+                </div>
                 <mat-divider></mat-divider>
                 <div class="summary-total">
                   <span class="total-label">Total:</span>
                   <span class="total-amount">{{ formatCurrency(calculateTotal()) }}</span>
                   <span class="coins-summary" *ngIf="coinsRequested">+ Coins</span>
+                  <span class="dye-pack-summary" *ngIf="dyePackRequired">+ Dye Pack</span>
                 </div>
               </mat-card-content>
             </mat-card>

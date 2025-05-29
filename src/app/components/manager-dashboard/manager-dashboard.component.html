@@ -80,13 +80,12 @@
         </mat-card>
 
         <!-- Critical Alerts -->
-        <mat-card class="metric-card alerts-metric">
+        <mat-card class="metric-card alerts-metric clickable" (click)="navigateToCriticalAlerts()">
           <mat-card-content>
             <div class="metric-content">
               <div class="metric-icon">
-                <mat-icon [matBadge]="criticalAlerts" matBadgeColor="warn" [matBadgeHidden]="criticalAlerts === 0">
-                  warning
-                </mat-icon>
+                <mat-icon>warning</mat-icon>
+                <div class="alert-badge" *ngIf="criticalAlerts > 0">!</div>
               </div>
               <div class="metric-details">
                 <div class="metric-value">{{ criticalAlerts }}</div>
@@ -96,25 +95,7 @@
           </mat-card-content>
         </mat-card>
 
-        <!-- Compliance Score -->
-        <mat-card class="metric-card compliance-metric">
-          <mat-card-content>
-            <div class="metric-content">
-              <div class="metric-icon">
-                <mat-icon>verified</mat-icon>
-              </div>
-              <div class="metric-details">
-                <div class="metric-value">{{ complianceScore }}%</div>
-                <div class="metric-label">Compliance Score</div>
-                <mat-progress-bar 
-                  mode="determinate" 
-                  [value]="complianceScore"
-                  [color]="complianceScore >= 90 ? 'primary' : complianceScore >= 70 ? 'accent' : 'warn'">
-                </mat-progress-bar>
-              </div>
-            </div>
-          </mat-card-content>
-        </mat-card>
+
       </div>
     </div>
 
@@ -147,6 +128,11 @@
             <button mat-raised-button (click)="onViewLogs()" class="action-button">
               <mat-icon>list_alt</mat-icon>
               View System Logs
+            </button>
+
+            <button mat-raised-button (click)="onViewInventory()" class="action-button">
+              <mat-icon>inventory</mat-icon>
+              Manage Inventory
             </button>
           </div>
         </mat-card-content>

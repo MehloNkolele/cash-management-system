@@ -1,0 +1,188 @@
+<!-- Toolbar -->
+<mat-toolbar color="primary" class="app-toolbar">
+  <button mat-icon-button (click)="goBack()">
+    <mat-icon>arrow_back</mat-icon>
+  </button>
+  <span class="toolbar-title">Critical Alerts Overview</span>
+
+  <span class="toolbar-spacer"></span>
+
+  <!-- User Menu -->
+  <button mat-icon-button [matMenuTriggerFor]="userMenu">
+    <mat-icon>account_circle</mat-icon>
+  </button>
+  <mat-menu #userMenu="matMenu">
+    <div class="user-info">
+      <div class="user-name">{{ currentUser?.fullName }}</div>
+      <div class="user-role">{{ currentUser?.role | titlecase }}</div>
+    </div>
+    <mat-divider></mat-divider>
+    <button mat-menu-item (click)="logout()">
+      <mat-icon>logout</mat-icon>
+      <span>Logout</span>
+    </button>
+  </mat-menu>
+</mat-toolbar>
+
+<!-- Main Content -->
+<div class="alerts-content">
+  <!-- Header Section -->
+  <div class="header-section">
+    <mat-card class="header-card">
+      <mat-card-content>
+        <div class="header-content">
+          <div class="header-info">
+            <h1>
+              <mat-icon class="header-icon">warning</mat-icon>
+              Critical Alerts Overview
+            </h1>
+            <p>Monitor and manage low stock alerts across all note series and denominations</p>
+          </div>
+          <div class="header-actions">
+            <button mat-raised-button color="primary" (click)="navigateToInventory()">
+              <mat-icon>inventory</mat-icon>
+              Manage Inventory
+            </button>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="summary-section" *ngIf="inventorySummary">
+    <div class="summary-grid">
+      <mat-card class="summary-card critical">
+        <mat-card-content>
+          <div class="summary-content">
+            <div class="summary-icon">
+              <mat-icon>error</mat-icon>
+            </div>
+            <div class="summary-details">
+              <div class="summary-value">{{ criticalAlerts.length }}</div>
+              <div class="summary-label">Critical Alerts</div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="summary-card high">
+        <mat-card-content>
+          <div class="summary-content">
+            <div class="summary-icon">
+              <mat-icon>warning</mat-icon>
+            </div>
+            <div class="summary-details">
+              <div class="summary-value">{{ highAlerts.length }}</div>
+              <div class="summary-label">High Priority</div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="summary-card medium">
+        <mat-card-content>
+          <div class="summary-content">
+            <div class="summary-icon">
+              <mat-icon>info</mat-icon>
+            </div>
+            <div class="summary-details">
+              <div class="summary-value">{{ mediumAlerts.length }}</div>
+              <div class="summary-label">Medium Priority</div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="summary-card low">
+        <mat-card-content>
+          <div class="summary-content">
+            <div class="summary-icon">
+              <mat-icon>check_circle</mat-icon>
+            </div>
+            <div class="summary-details">
+              <div class="summary-value">{{ lowAlerts.length }}</div>
+              <div class="summary-label">Low Priority</div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+
+  <!-- All Alerts Table -->
+  <div class="alerts-section">
+    <mat-card class="alerts-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>warning</mat-icon>
+          All Low Stock Alerts ({{ allAlerts.length }})
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="table-container" *ngIf="allAlerts.length > 0; else noAlertsTemplate">
+          <table mat-table [dataSource]="allAlerts" class="alerts-table">
+            <ng-container matColumnDef="series">
+              <th mat-header-cell *matHeaderCellDef>Series</th>
+              <td mat-cell *matCellDef="let alert">{{ alert.series | titlecase }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="denomination">
+              <th mat-header-cell *matHeaderCellDef>Denomination</th>
+              <td mat-cell *matCellDef="let alert">
+                <div class="denomination-cell">
+                  <mat-icon>payments</mat-icon>
+                  R{{ alert.denomination }}
+                </div>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="quantity">
+              <th mat-header-cell *matHeaderCellDef>Current Stock</th>
+              <td mat-cell *matCellDef="let alert">
+                <span class="quantity-value" [ngClass]="getSeverityClass(alert.severity)">
+                  {{ alert.currentQuantity }}
+                </span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="threshold">
+              <th mat-header-cell *matHeaderCellDef>Minimum Threshold</th>
+              <td mat-cell *matCellDef="let alert">{{ alert.minimumThreshold }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="severity">
+              <th mat-header-cell *matHeaderCellDef>Severity</th>
+              <td mat-cell *matCellDef="let alert">
+                <mat-chip [class]="getSeverityClass(alert.severity)">
+                  <mat-icon>{{ getSeverityIcon(alert.severity) }}</mat-icon>
+                  {{ alert.severity | titlecase }}
+                </mat-chip>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef>Actions</th>
+              <td mat-cell *matCellDef="let alert">
+                <button mat-icon-button color="primary" (click)="onEditAlert(alert)" title="Edit Alert">
+                  <mat-icon>edit</mat-icon>
+                </button>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="alertColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: alertColumns;"></tr>
+          </table>
+        </div>
+
+        <ng-template #noAlertsTemplate>
+          <div class="no-alerts">
+            <mat-icon>check_circle</mat-icon>
+            <h3>No Low Stock Alerts</h3>
+            <p>All inventory levels are above their minimum thresholds.</p>
+          </div>
+        </ng-template>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>

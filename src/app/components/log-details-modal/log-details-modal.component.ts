@@ -225,6 +225,9 @@ import { SystemLog, LogSeverity, LOG_TYPE_LABELS, LOG_CATEGORY_LABELS, LOG_SEVER
 
     // Severity chip styles
     mat-chip {
+      display: inline-flex !important; // Ensure chip itself behaves as inline-flex for content alignment
+      align-items: center !important;
+      gap: 0.25rem !important; // Add a small gap between icon and text
       &.severity-critical {
         background-color: var(--alert-critical) !important;
         color: var(--absa-white) !important;
@@ -246,8 +249,21 @@ import { SystemLog, LogSeverity, LOG_TYPE_LABELS, LOG_CATEGORY_LABELS, LOG_SEVER
       }
 
       mat-icon {
+        font-size: 1rem !important;
+        height: 1rem !important;
+        width: 1rem !important;
+        line-height: 1rem !important; // Ensure icon itself has a consistent line-height
+        vertical-align: middle !important; // Align icon vertically
         color: var(--absa-white) !important;
+        transform: translateY(-1px) !important; /* Fine-tune vertical alignment */
       }
+
+        .mdc-chip__text-label, span:not([class*="mat-icon"]):not([class*="mat-mdc-chip-"]) { // Target generated span or direct span
+          font-size: 0.875rem !important; // Explicit font size for text
+          line-height: 1rem !important; // Match icon's line-height for precise vertical alignment
+          display: inline-block !important; // Use inline-block for simpler vertical alignment with text
+          vertical-align: middle !important; // Align text vertically with icon
+        }
     }
   `]
 })

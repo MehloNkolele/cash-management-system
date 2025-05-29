@@ -98,12 +98,22 @@
               <div class="note-quantity">Requested</div>
               <div class="note-total">✓</div>
             </div>
+            <!-- Dye Pack Item -->
+            <div *ngIf="request.dyePackRequired" class="note-item dye-pack-item">
+              <div class="note-denomination">
+                <mat-icon>security</mat-icon>
+                Dye Pack
+              </div>
+              <div class="note-quantity">Required</div>
+              <div class="note-total">✓</div>
+            </div>
           </div>
           <mat-divider></mat-divider>
           <div class="total-amount">
             <span class="total-label">Total Amount:</span>
             <span class="total-value">{{ formatCurrency(calculateTotalAmount()) }}</span>
             <span class="coins-indicator" *ngIf="request.coinsRequested">+ Coins</span>
+            <span class="dye-pack-indicator" *ngIf="request.dyePackRequired">+ Dye Pack</span>
           </div>
         </mat-card-content>
       </mat-card>
@@ -117,6 +127,107 @@
         </mat-card-header>
         <mat-card-content>
           <p>{{ request.comments }}</p>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Rejection Details Section -->
+    <div class="rejection-section" *ngIf="request.status === 'rejected'">
+      <mat-card class="rejection-card" [ngClass]="{ 'auto-rejected': request.isAutoRejected }">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon color="warn">{{ request.isAutoRejected ? 'error' : 'block' }}</mat-icon>
+            {{ request.isAutoRejected ? 'Automatically Rejected' : 'Request Rejected' }}
+          </mat-card-title>
+          <mat-card-subtitle>
+            {{ request.isAutoRejected ? 'System automatically rejected due to insufficient inventory' : 'Manually rejected by authorized personnel' }}
+          </mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="rejection-details">
+            <div class="rejection-info">
+              <div class="info-item">
+                <span class="label">Rejection Reason:</span>
+                <span class="value">{{ request.rejectionReason || 'No reason provided' }}</span>
+              </div>
+              <div class="info-item" *ngIf="!request.isAutoRejected">
+                <span class="label">Rejected By:</span>
+                <span class="value">{{ request.rejectedBy || 'Unknown' }}</span>
+              </div>
+              <div class="info-item">
+                <span class="label">Rejection Date:</span>
+                <span class="value">{{ request.rejectedDate | date:'medium' }}</span>
+              </div>
+            </div>
+
+            <div class="rejection-actions" *ngIf="request.isAutoRejected">
+              <h4>Suggested Next Steps:</h4>
+              <ul class="suggestions-list">
+                <li>Review and reduce the requested quantities for insufficient denominations</li>
+                <li>Contact the manager ({{ getManagerName() }}) for inventory replenishment</li>
+                <li>Consider alternative denominations if available</li>
+                <li>Submit a smaller request and follow up later</li>
+              </ul>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Inventory Validation Section (for Approvers) -->
+    <div class="inventory-section" *ngIf="isIssuer && inventoryValidation">
+      <mat-card class="inventory-card" [ngClass]="{ 'warning': inventoryValidation.warnings.length > 0, 'error': inventoryValidation.errors.length > 0 }">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon [color]="inventoryValidation.errors.length > 0 ? 'warn' : inventoryValidation.warnings.length > 0 ? 'accent' : 'primary'">
+              {{ inventoryValidation.errors.length > 0 ? 'error' : inventoryValidation.warnings.length > 0 ? 'warning' : 'inventory' }}
+            </mat-icon>
+            Inventory Validation
+          </mat-card-title>
+          <mat-card-subtitle>
+            {{ inventoryValidation.errors.length > 0 ? 'Inventory issues detected' :
+               inventoryValidation.warnings.length > 0 ? 'Inventory warnings' : 'Inventory available' }}
+          </mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <!-- Errors -->
+          <div class="validation-messages" *ngIf="inventoryValidation.errors.length > 0">
+            <h4 class="error-title">
+              <mat-icon color="warn">error</mat-icon>
+              Inventory Errors
+            </h4>
+            <ul class="error-list">
+              <li *ngFor="let error of inventoryValidation.errors" class="error-item">{{ error }}</li>
+            </ul>
+          </div>
+
+          <!-- Warnings -->
+          <div class="validation-messages" *ngIf="inventoryValidation.warnings.length > 0">
+            <h4 class="warning-title">
+              <mat-icon color="accent">warning</mat-icon>
+              Inventory Warnings
+            </h4>
+            <ul class="warning-list">
+              <li *ngFor="let warning of inventoryValidation.warnings" class="warning-item">{{ warning }}</li>
+            </ul>
+          </div>
+
+          <!-- Inventory Preview -->
+          <div class="inventory-preview" *ngIf="inventoryValidation.inventoryPreview && inventoryValidation.inventoryPreview.length > 0">
+            <h4>Inventory Impact Preview</h4>
+            <div class="preview-grid">
+              <div *ngFor="let preview of inventoryValidation.inventoryPreview" class="preview-item">
+                <div class="preview-denomination">R{{ preview.denomination }} ({{ preview.series }})</div>
+                <div class="preview-details">
+                  <span class="current">Current: {{ preview.currentQuantity }}</span>
+                  <span class="requested">Requested: {{ preview.requestedQuantity }}</span>
+                  <span class="remaining" [ngClass]="{ 'low': preview.remainingAfterApproval < 10 }">
+                    Remaining: {{ preview.remainingAfterApproval }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
         </mat-card-content>
       </mat-card>
     </div>
@@ -235,6 +346,20 @@
           <button mat-raised-button color="warn" (click)="cancelRequest()">
             <mat-icon>cancel</mat-icon>
             Cancel Request
+          </button>
+        </mat-card-actions>
+      </mat-card>
+
+      <!-- Manager Rejection Section -->
+      <mat-card class="action-card" *ngIf="canReject()">
+        <mat-card-header>
+          <mat-card-title>Reject Request</mat-card-title>
+          <mat-card-subtitle>Reject this request with a reason (Manager authority)</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-actions>
+          <button mat-raised-button color="warn" (click)="rejectRequest()">
+            <mat-icon>block</mat-icon>
+            Reject Request
           </button>
         </mat-card-actions>
       </mat-card>

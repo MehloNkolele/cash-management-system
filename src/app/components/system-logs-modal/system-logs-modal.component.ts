@@ -240,6 +240,9 @@ import { LogDetailsModalComponent } from '../log-details-modal/log-details-modal
 
     // Severity chip styling
     mat-chip {
+      display: inline-flex !important; // Ensure chip itself behaves as inline-flex for content alignment
+      align-items: center !important;
+      gap: 0.25rem !important; // Add a small gap between icon and text
       &.severity-critical {
         background-color: var(--alert-critical) !important;
         color: var(--absa-white) !important;
@@ -265,6 +268,16 @@ import { LogDetailsModalComponent } from '../log-details-modal/log-details-modal
         font-size: 1rem;
         width: 1rem;
         height: 1rem;
+        vertical-align: middle; // Ensure icon aligns well with text
+      }
+
+      // Ensure icon and text are on the same line and centered
+      .mdc-chip__text-label, // For MDC based mat-chip
+      span:not([class]), // For plain text nodes or simple spans if mat-chip wraps text
+      span.mat-mdc-chip-action-label { // For mat-chip's text label span
+        display: inline-flex;
+        align-items: center;
+        vertical-align: middle;
       }
     }
 

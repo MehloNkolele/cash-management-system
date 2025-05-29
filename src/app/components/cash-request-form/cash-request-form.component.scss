@@ -92,21 +92,104 @@
 .denomination-item {
   display: flex;
   flex-direction: column;
-  align-items: center;
   padding: 1rem;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
   background-color: #fafafa;
 
+  .denomination-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+
+    .denomination-label {
+      font-weight: 600;
+      font-size: 1.1rem;
+      color: #333;
+      display: flex;
+      align-items: center;
+    }
+    
+    @media (max-width: 480px) {
+      .denomination-label {
+        font-size: 1rem;
+      }
+    }
+
+    .inventory-status-chip {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.25rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.25rem 0.5rem;
+      border-radius: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      height: 24px;
+      white-space: nowrap;
+      line-height: 1;
+
+      mat-icon {
+        font-size: 0.875rem;
+        width: 0.875rem;
+        height: 0.875rem;
+        line-height: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 2px;
+      }
+
+      &.status-available {
+        background-color: #4caf50;
+        color: white;
+      }
+
+      &.status-low-stock {
+        background-color: #ff9800;
+        color: white;
+      }
+
+      &.status-out-of-stock {
+        background-color: #f44336;
+        color: white;
+      }
+      
+      @media (max-width: 380px) {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.4rem;
+        
+        mat-icon {
+          font-size: 0.8rem;
+          width: 0.8rem;
+          height: 0.8rem;
+        }
+      }
+    }
+  }
+
   mat-form-field {
     width: 100%;
     margin-bottom: 0.5rem;
+
+    &.mat-form-field-disabled {
+      opacity: 0.6;
+    }
   }
 
   .denomination-total {
     font-weight: 600;
     color: #1976d2;
     font-size: 1rem;
+    text-align: center;
+    padding: 0.5rem;
+    background-color: #e3f2fd;
+    border-radius: 4px;
   }
 }
 
@@ -147,6 +230,54 @@
     border-left: 4px solid #2196f3;
     font-size: 0.9rem;
     color: #1976d2;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+  }
+}
+
+// Dye Pack Toggle Styles
+.dye-pack-section {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+
+  mat-slide-toggle {
+    width: 100%;
+
+    .toggle-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 500;
+      color: #333;
+
+      mat-icon {
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+        color: #e31837; // Absa red for security icon
+      }
+    }
+  }
+
+  .dye-pack-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    padding: 8px 12px;
+    background-color: #fff3e0;
+    border-radius: 4px;
+    border-left: 4px solid #e31837;
+    font-size: 0.9rem;
+    color: #e31837;
+    font-weight: 500;
 
     mat-icon {
       font-size: 16px;
@@ -232,6 +363,19 @@
     }
   }
 
+  // Special styling for dye pack summary item
+  .dye-pack-summary-item {
+    .note-info mat-icon {
+      color: #e31837; // Absa red for security icon
+    }
+
+    .note-total {
+      color: #e31837;
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+  }
+
   .summary-total {
     display: flex;
     justify-content: space-between;
@@ -253,6 +397,13 @@
     .coins-summary {
       font-size: 0.9rem;
       color: #ff9800;
+      font-style: italic;
+      margin-left: 8px;
+    }
+
+    .dye-pack-summary {
+      font-size: 0.9rem;
+      color: #e31837;
       font-style: italic;
       margin-left: 8px;
     }
@@ -307,5 +458,238 @@ mat-form-field {
     flex-direction: column;
     text-align: center;
     gap: 0.25rem;
+  }
+}
+
+// Responsive adjustments for denomination items
+@media (max-width: 480px) {
+  .denomination-item {
+    .denomination-header {
+      flex-direction: column;
+      align-items: flex-start;
+      
+      .inventory-status-chip {
+        align-self: flex-start;
+      }
+    }
+  }
+}
+
+// Override Angular Material styles for proper chip alignment
+::ng-deep .mat-mdc-chip.inventory-status-chip .mdc-evolution-chip__cell--primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+::ng-deep .mat-mdc-chip.inventory-status-chip .mdc-evolution-chip__action--primary {
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+}
+
+// Additional styles to ensure perfect alignment in inventory-status-chip
+::ng-deep .inventory-status-chip.mat-mdc-chip {
+  min-height: 24px;
+  height: auto;
+}
+
+::ng-deep .inventory-status-chip .mat-mdc-chip-action-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+::ng-deep .inventory-status-chip mat-icon {
+  margin: 0 2px 0 0 !important;
+  vertical-align: middle;
+}
+
+// Ensure proper spacing for very small screens
+@media (max-width: 320px) {
+  .inventory-status-chip {
+    font-size: 0.65rem !important;
+    padding: 0.15rem 0.3rem !important;
+    
+    mat-icon {
+      font-size: 0.7rem !important;
+      width: 0.7rem !important;
+      height: 0.7rem !important;
+    }
+  }
+}
+
+// Smart Mode Styling
+.smart-mode-section {
+  background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+  border: 1px solid #bbdefb;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+
+  .toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+    color: var(--absa-red);
+
+    mat-icon {
+      color: var(--absa-gold);
+    }
+  }
+
+  .smart-mode-description {
+    margin: 12px 0 0 0;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 6px;
+    font-size: 14px;
+    color: #666;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+      color: var(--absa-light-blue);
+      margin-top: 2px;
+    }
+  }
+}
+
+// Warning Card Styling
+.warning-card {
+  background: linear-gradient(135deg, #fff3e0 0%, #ffecb3 100%);
+  border: 1px solid #ffb74d;
+  margin-bottom: 16px;
+
+  .warning-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    color: #e65100;
+    margin-bottom: 12px;
+
+    mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  .warning-list {
+    margin: 0;
+    padding-left: 20px;
+
+    .warning-item {
+      color: #bf360c;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+  }
+}
+
+// Series Selection Styling
+.series-selection {
+  margin: 12px 0;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  background: #fafafa;
+
+  .series-header {
+    .series-toggle-btn {
+      width: 100%;
+      justify-content: flex-start;
+      text-align: left;
+      padding: 8px 12px;
+      font-size: 14px;
+      color: var(--absa-red);
+
+      mat-icon {
+        margin-right: 8px;
+      }
+    }
+  }
+
+  .series-options {
+    padding: 12px;
+    border-top: 1px solid #e0e0e0;
+    background: white;
+
+    mat-radio-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .series-option {
+      padding: 8px;
+      border-radius: 4px;
+      transition: background-color 0.2s ease;
+
+      &.series-available {
+        background: rgba(76, 175, 80, 0.1);
+        border: 1px solid rgba(76, 175, 80, 0.3);
+      }
+
+      &.series-low-stock {
+        background: rgba(255, 152, 0, 0.1);
+        border: 1px solid rgba(255, 152, 0, 0.3);
+      }
+
+      &.series-out-of-stock {
+        background: rgba(244, 67, 54, 0.1);
+        border: 1px solid rgba(244, 67, 54, 0.3);
+        opacity: 0.6;
+      }
+
+      .series-info {
+        margin-left: 8px;
+
+        .series-name {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-weight: 500;
+          margin-bottom: 4px;
+
+          .recommended-chip {
+            background: var(--absa-gold) !important;
+            color: white !important;
+            font-size: 11px;
+            height: 20px;
+            padding: 0 6px;
+
+            mat-icon {
+              font-size: 14px;
+              width: 14px;
+              height: 14px;
+            }
+          }
+        }
+
+        .series-availability {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 12px;
+          color: #666;
+
+          mat-icon {
+            font-size: 16px;
+            width: 16px;
+            height: 16px;
+          }
+
+          .availability-text {
+            font-weight: 500;
+          }
+        }
+      }
+    }
   }
 }

@@ -19,6 +19,7 @@ import {
 import { LocalStorageService } from './local-storage.service';
 import { UserService } from './user.service';
 import { SystemLogService } from './system-log.service';
+import { BankNote, InventoryAvailability, InventoryStatus, InventoryValidationResult, InventoryPreviewItem, SeriesInventoryAvailability } from '../models/cash-request.model';
 
 @Injectable({
   providedIn: 'root'
@@ -61,7 +62,7 @@ export class InventoryService {
 
     series.forEach(noteSeries => {
       denominations.forEach(denomination => {
-        const quantity = this.getInitialQuantity(denomination);
+        const quantity = this.getInitialQuantity(noteSeries, denomination);
         initialInventory.push({
           id: this.generateInventoryId(noteSeries, denomination),
           noteSeries,
@@ -93,16 +94,40 @@ export class InventoryService {
     this.localStorageService.setItem(this.SETTINGS_KEY, defaultSettings);
   }
 
-  private getInitialQuantity(denomination: NoteDenomination): number {
-    // Set initial quantities based on denomination
-    switch (denomination) {
-      case NoteDenomination.R10: return 100;
-      case NoteDenomination.R20: return 80;
-      case NoteDenomination.R50: return 60;
-      case NoteDenomination.R100: return 40;
-      case NoteDenomination.R200: return 20;
-      default: return 50;
-    }
+  private getInitialQuantity(series: NoteSeries, denomination: NoteDenomination): number {
+    // Set initial quantities based on series and denomination as per requirements
+    const initialInventoryData: { [key in NoteSeries]: { [key in NoteDenomination]: number } } = {
+      [NoteSeries.MANDELA]: {
+        [NoteDenomination.R10]: 2087,
+        [NoteDenomination.R20]: 3261,
+        [NoteDenomination.R50]: 3079,
+        [NoteDenomination.R100]: 1560,
+        [NoteDenomination.R200]: 2290
+      },
+      [NoteSeries.BIG_5]: {
+        [NoteDenomination.R10]: 0,
+        [NoteDenomination.R20]: 1,
+        [NoteDenomination.R50]: 0,
+        [NoteDenomination.R100]: 1,
+        [NoteDenomination.R200]: 1
+      },
+      [NoteSeries.COMMEMORATIVE]: {
+        [NoteDenomination.R10]: 13,
+        [NoteDenomination.R20]: 38,
+        [NoteDenomination.R50]: 21,
+        [NoteDenomination.R100]: 139,
+        [NoteDenomination.R200]: 705
+      },
+      [NoteSeries.V6]: {
+        [NoteDenomination.R10]: 250,
+        [NoteDenomination.R20]: 250,
+        [NoteDenomination.R50]: 150,
+        [NoteDenomination.R100]: 50,
+        [NoteDenomination.R200]: 22
+      }
+    };
+
+    return initialInventoryData[series]?.[denomination] || 0;
   }
 
   private generateInventoryId(series: NoteSeries, denomination: NoteDenomination): string {
@@ -320,11 +345,371 @@ export class InventoryService {
     this.localStorageService.setItem(this.SETTINGS_KEY, settings);
   }
 
+  updateLowStockThreshold(denomination: NoteDenomination, newThreshold: number): boolean {
+    const currentUser = this.userService.getCurrentUser();
+    if (!currentUser || !this.userService.hasManagerPrivileges()) {
+      throw new Error('Insufficient privileges to update thresholds');
+    }
+
+    if (newThreshold < 0) {
+      throw new Error('Threshold cannot be negative');
+    }
+
+    const settings = this.getSettings();
+    const oldThreshold = settings.lowStockThresholds[denomination.toString()] || 0;
+
+    settings.lowStockThresholds[denomination.toString()] = newThreshold;
+    this.updateSettings(settings);
+
+    // Log the threshold change
+    this.systemLogService.logManagerAction(
+      'Update Stock Threshold',
+      `Updated minimum threshold for R${denomination} from ${oldThreshold} to ${newThreshold}`
+    );
+
+    return true;
+  }
+
   getSeriesLabel(series: NoteSeries): string {
     return NOTE_SERIES_LABELS[series];
   }
 
   getDenominationLabel(denomination: NoteDenomination): string {
     return DENOMINATION_LABELS[denomination];
+  }
+
+  // Method to reset inventory to initial values (for testing/demo purposes)
+  resetInventoryToInitialValues(): void {
+    const currentUser = this.userService.getCurrentUser();
+    if (!currentUser || !this.userService.hasManagerPrivileges()) {
+      throw new Error('Insufficient privileges to reset inventory');
+    }
+
+    // Clear existing inventory and recreate with initial values
+    this.localStorageService.removeItem(this.INVENTORY_KEY);
+    this.localStorageService.removeItem(this.TRANSACTIONS_KEY);
+
+    this.createInitialInventory();
+    this.loadInventory();
+    this.loadTransactions();
+
+    // Log the inventory reset
+    this.systemLogService.createLog({
+      type: 'system_event' as any,
+      category: 'inventory_management' as any,
+      severity: 'info' as any,
+      title: 'Inventory Reset',
+      message: `Inventory reset to initial values by ${currentUser.fullName}`,
+      userId: currentUser.id,
+      userName: currentUser.fullName
+    });
+  }
+
+  // Method to get detailed inventory breakdown for management view
+  getDetailedInventoryBreakdown(): { [key in NoteSeries]: CashInventory[] } {
+    const inventory = this.getAllInventory();
+    const breakdown: { [key in NoteSeries]: CashInventory[] } = {
+      [NoteSeries.MANDELA]: [],
+      [NoteSeries.BIG_5]: [],
+      [NoteSeries.COMMEMORATIVE]: [],
+      [NoteSeries.V6]: []
+    };
+
+    inventory.forEach(item => {
+      breakdown[item.noteSeries].push(item);
+    });
+
+    // Sort each series by denomination
+    Object.keys(breakdown).forEach(series => {
+      breakdown[series as NoteSeries].sort((a, b) => a.denomination - b.denomination);
+    });
+
+    return breakdown;
+  }
+
+  // Role-based inventory availability for requesters (basic status only)
+  getInventoryAvailabilityForRequesters(): InventoryAvailability[] {
+    const inventory = this.getAllInventory();
+    const settings = this.getSettings();
+    const denominationMap = new Map<NoteDenomination, number>();
+
+    // Aggregate quantities across all series for each denomination
+    inventory.forEach(item => {
+      const current = denominationMap.get(item.denomination) || 0;
+      denominationMap.set(item.denomination, current + item.quantity);
+    });
+
+    return Object.values(NoteDenomination)
+      .filter(d => typeof d === 'number')
+      .map(denomination => {
+        const totalQuantity = denominationMap.get(denomination as NoteDenomination) || 0;
+        const threshold = settings.lowStockThresholds[denomination.toString()] || 0;
+
+        let status: InventoryStatus;
+        if (totalQuantity === 0) {
+          status = InventoryStatus.OUT_OF_STOCK;
+        } else if (totalQuantity <= threshold) {
+          status = InventoryStatus.LOW_STOCK;
+        } else {
+          status = InventoryStatus.AVAILABLE;
+        }
+
+        return {
+          denomination: denomination as NoteDenomination,
+          status
+        };
+      });
+  }
+
+  // Role-based inventory availability for approvers (detailed quantities)
+  getInventoryAvailabilityForApprovers(): InventoryAvailability[] {
+    const inventory = this.getAllInventory();
+    const settings = this.getSettings();
+    const denominationMap = new Map<NoteDenomination, number>();
+
+    // Aggregate quantities across all series for each denomination
+    inventory.forEach(item => {
+      const current = denominationMap.get(item.denomination) || 0;
+      denominationMap.set(item.denomination, current + item.quantity);
+    });
+
+    return Object.values(NoteDenomination)
+      .filter(d => typeof d === 'number')
+      .map(denomination => {
+        const totalQuantity = denominationMap.get(denomination as NoteDenomination) || 0;
+        const threshold = settings.lowStockThresholds[denomination.toString()] || 0;
+
+        let status: InventoryStatus;
+        if (totalQuantity === 0) {
+          status = InventoryStatus.OUT_OF_STOCK;
+        } else if (totalQuantity <= threshold) {
+          status = InventoryStatus.LOW_STOCK;
+        } else {
+          status = InventoryStatus.AVAILABLE;
+        }
+
+        return {
+          denomination: denomination as NoteDenomination,
+          status,
+          totalAvailable: totalQuantity
+        };
+      });
+  }
+
+  // Validate if a cash request can be fulfilled with current inventory
+  validateCashRequest(bankNotes: BankNote[]): InventoryValidationResult {
+    const inventory = this.getAllInventory();
+    const errors: string[] = [];
+    const warnings: string[] = [];
+    const inventoryPreview: InventoryPreviewItem[] = [];
+
+    // Aggregate current inventory by denomination
+    const denominationMap = new Map<NoteDenomination, { total: number, series: CashInventory[] }>();
+    inventory.forEach(item => {
+      if (!denominationMap.has(item.denomination)) {
+        denominationMap.set(item.denomination, { total: 0, series: [] });
+      }
+      const current = denominationMap.get(item.denomination)!;
+      current.total += item.quantity;
+      current.series.push(item);
+    });
+
+    // Check each requested denomination
+    bankNotes.forEach(note => {
+      const available = denominationMap.get(note.denomination);
+      const totalAvailable = available?.total || 0;
+
+      if (note.quantity > totalAvailable) {
+        errors.push(`Insufficient ${DENOMINATION_LABELS[note.denomination]} notes. Requested: ${note.quantity}, Available: ${totalAvailable}`);
+      } else if (note.quantity > totalAvailable * 0.8) {
+        warnings.push(`High usage of ${DENOMINATION_LABELS[note.denomination]} notes. This will significantly reduce available stock.`);
+      }
+
+      // Create preview for each series that has this denomination
+      if (available) {
+        available.series.forEach(item => {
+          if (item.quantity > 0) {
+            const allocatedFromThisSeries = Math.min(note.quantity, item.quantity);
+            inventoryPreview.push({
+              denomination: note.denomination,
+              currentQuantity: item.quantity,
+              requestedQuantity: allocatedFromThisSeries,
+              remainingAfterApproval: item.quantity - allocatedFromThisSeries,
+              series: NOTE_SERIES_LABELS[item.noteSeries]
+            });
+          }
+        });
+      }
+    });
+
+    return {
+      isValid: errors.length === 0,
+      errors,
+      warnings,
+      inventoryPreview
+    };
+  }
+
+  // Process cash request approval and update inventory
+  processCashRequestApproval(bankNotes: BankNote[], requestId: string, approvedBy: string): boolean {
+    const currentUser = this.userService.getCurrentUser();
+    if (!currentUser || (!this.userService.hasManagerPrivileges() && currentUser.role !== 'issuer')) {
+      throw new Error('Insufficient privileges to process cash request');
+    }
+
+    const validation = this.validateCashRequest(bankNotes);
+    if (!validation.isValid) {
+      throw new Error(`Cannot approve request: ${validation.errors.join(', ')}`);
+    }
+
+    const inventory = this.getAllInventory();
+    const transactions: InventoryTransaction[] = [];
+
+    // Deduct requested amounts from inventory (FIFO approach - use oldest stock first)
+    bankNotes.forEach(note => {
+      let remainingToDeduct = note.quantity;
+
+      // Sort inventory items by denomination and then by series priority
+      const availableItems = inventory
+        .filter(item => item.denomination === note.denomination && item.quantity > 0)
+        .sort((a, b) => {
+          // Priority order: Mandela, V6, Commemorative, Big 5
+          const seriesPriority = {
+            [NoteSeries.MANDELA]: 1,
+            [NoteSeries.V6]: 2,
+            [NoteSeries.COMMEMORATIVE]: 3,
+            [NoteSeries.BIG_5]: 4
+          };
+          return seriesPriority[a.noteSeries] - seriesPriority[b.noteSeries];
+        });
+
+      availableItems.forEach(item => {
+        if (remainingToDeduct > 0) {
+          const deductFromThisItem = Math.min(remainingToDeduct, item.quantity);
+
+          // Update inventory item
+          item.quantity -= deductFromThisItem;
+          item.value = item.quantity * item.denomination;
+          item.lastUpdated = new Date();
+          item.updatedBy = approvedBy;
+
+          // Create transaction record
+          transactions.push({
+            id: this.generateTransactionId(),
+            type: TransactionType.REMOVE,
+            inventoryId: item.id,
+            quantityChange: -deductFromThisItem,
+            previousQuantity: item.quantity + deductFromThisItem,
+            newQuantity: item.quantity,
+            reason: `Cash request approval - Request ID: ${requestId}`,
+            performedBy: approvedBy,
+            timestamp: new Date()
+          });
+
+          remainingToDeduct -= deductFromThisItem;
+        }
+      });
+    });
+
+    // Save updated inventory and transactions
+    this.saveInventory(inventory);
+    transactions.forEach(transaction => this.saveTransaction(transaction));
+
+    // Log the inventory changes
+    this.systemLogService.createLog({
+      type: 'inventory_change' as any,
+      category: 'cash_request' as any,
+      severity: 'info' as any,
+      title: 'Inventory Updated - Cash Request Approved',
+      message: `Inventory updated for approved cash request ${requestId} by ${approvedBy}`,
+      userId: currentUser.id,
+      userName: currentUser.fullName,
+      metadata: { requestId, bankNotes, approvedBy }
+    });
+
+    return true;
+  }
+
+  // Get total available quantity for a specific denomination across all series
+  getAvailableQuantity(denomination: NoteDenomination): number {
+    const inventory = this.getAllInventory();
+    return inventory
+      .filter(item => item.denomination === denomination)
+      .reduce((sum, item) => sum + item.quantity, 0);
+  }
+
+  // Get series-specific inventory availability for smart requesting
+  getSeriesInventoryAvailability(denomination: NoteDenomination): SeriesInventoryAvailability[] {
+    const inventory = this.getAllInventory();
+    const settings = this.getSettings();
+
+    return Object.values(NoteSeries).map(series => {
+      const item = inventory.find(inv =>
+        inv.denomination === denomination && inv.noteSeries === series
+      );
+
+      const quantity = item ? item.quantity : 0;
+      const threshold = settings.lowStockThresholds[denomination.toString()] || 0;
+
+      let status: InventoryStatus;
+      if (quantity === 0) {
+        status = InventoryStatus.OUT_OF_STOCK;
+      } else if (quantity <= threshold) {
+        status = InventoryStatus.LOW_STOCK;
+      } else {
+        status = InventoryStatus.AVAILABLE;
+      }
+
+      // Determine if this series is recommended (highest availability for this denomination)
+      const allSeriesForDenom = inventory.filter(inv => inv.denomination === denomination);
+      const maxQuantity = Math.max(...allSeriesForDenom.map(inv => inv.quantity));
+      const isRecommended = quantity === maxQuantity && quantity > 0;
+
+      return {
+        denomination,
+        series,
+        status,
+        available: quantity,
+        isRecommended
+      };
+    }).sort((a, b) => {
+      // Sort by recommended first, then by availability
+      if (a.isRecommended && !b.isRecommended) return -1;
+      if (!a.isRecommended && b.isRecommended) return 1;
+      return b.available - a.available;
+    });
+  }
+
+  // Get all series availability for all denominations
+  getAllSeriesInventoryAvailability(): { [key in NoteDenomination]: SeriesInventoryAvailability[] } {
+    const result = {} as { [key in NoteDenomination]: SeriesInventoryAvailability[] };
+
+    Object.values(NoteDenomination).forEach(denomination => {
+      if (typeof denomination === 'number') {
+        result[denomination as NoteDenomination] = this.getSeriesInventoryAvailability(denomination as NoteDenomination);
+      }
+    });
+
+    return result;
+  }
+
+  // Check if a specific series and denomination combination is available
+  isSeriesAvailable(denomination: NoteDenomination, series: NoteSeries, requestedQuantity: number = 1): boolean {
+    const inventory = this.getAllInventory();
+    const item = inventory.find(inv =>
+      inv.denomination === denomination && inv.noteSeries === series
+    );
+
+    return item ? item.quantity >= requestedQuantity : false;
+  }
+
+  // Get available quantity for a specific series and denomination
+  getSeriesAvailableQuantity(denomination: NoteDenomination, series: NoteSeries): number {
+    const inventory = this.getAllInventory();
+    const item = inventory.find(inv =>
+      inv.denomination === denomination && inv.noteSeries === series
+    );
+
+    return item ? item.quantity : 0;
   }
 }

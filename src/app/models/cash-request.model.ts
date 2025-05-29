@@ -5,6 +5,7 @@ export interface CashRequest {
   department: string;
   bankNotes: BankNote[];
   coinsRequested?: boolean;
+  dyePackRequired?: boolean;
   dateRequested: Date;
   expectedReturnDate?: Date;
   actualReturnDate?: Date;
@@ -17,11 +18,18 @@ export interface CashRequest {
   status: RequestStatus;
   createdAt: Date;
   updatedAt: Date;
+
+  // Rejection details
+  rejectionReason?: string;
+  rejectedBy?: string;
+  rejectedDate?: Date;
+  isAutoRejected?: boolean;
 }
 
 export interface BankNote {
   denomination: NoteDenomination;
   quantity: number;
+  series?: import('./inventory.model').NoteSeries; // Optional series selection for smart requesting
 }
 
 export enum NoteDenomination {
@@ -38,10 +46,58 @@ export enum RequestStatus {
   ISSUED = 'issued',
   RETURNED = 'returned',
   COMPLETED = 'completed',
-  CANCELLED = 'cancelled'
+  CANCELLED = 'cancelled',
+  REJECTED = 'rejected'
 }
 
 export interface CashRequestSummary {
   totalAmount: number;
   noteBreakdown: BankNote[];
+}
+
+export interface InventoryAvailability {
+  denomination: NoteDenomination;
+  status: InventoryStatus;
+  totalAvailable?: number; // Only visible to approvers
+}
+
+export interface SeriesInventoryAvailability {
+  denomination: NoteDenomination;
+  series: import('./inventory.model').NoteSeries;
+  status: InventoryStatus;
+  available: number;
+  isRecommended?: boolean; // Indicates if this series is recommended for the denomination
+}
+
+export enum InventoryStatus {
+  AVAILABLE = 'available',
+  LOW_STOCK = 'low_stock',
+  OUT_OF_STOCK = 'out_of_stock'
+}
+
+export interface InventoryValidationResult {
+  isValid: boolean;
+  errors: string[];
+  warnings: string[];
+  inventoryPreview?: InventoryPreviewItem[];
+}
+
+export interface InventoryPreviewItem {
+  denomination: NoteDenomination;
+  currentQuantity: number;
+  requestedQuantity: number;
+  remainingAfterApproval: number;
+  series: string;
+}
+
+export interface RejectionResult {
+  isRejected: boolean;
+  reason: string;
+  insufficientDenominations: {
+    denomination: NoteDenomination;
+    requested: number;
+    available: number;
+    shortage: number;
+  }[];
+  suggestedAlternatives?: string[];
 }

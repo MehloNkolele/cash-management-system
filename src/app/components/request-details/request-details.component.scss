@@ -162,6 +162,15 @@
       }
     }
 
+    &.status-rejected {
+      background: linear-gradient(135deg, #e91e63 0%, #c2185b 100%);
+      border: 2px solid #e91e63;
+
+      mat-icon, span {
+        color: white !important;
+      }
+    }
+
     &:hover {
       transform: translateY(-1px);
       box-shadow: 0 4px 8px rgba(0,0,0,0.15);
@@ -245,6 +254,32 @@
       font-weight: 700;
     }
   }
+
+  &.dye-pack-item {
+    background-color: #fff3e0;
+    border: 2px solid #e31837;
+
+    .note-denomination {
+      color: #e31837;
+
+      mat-icon {
+        font-size: 24px;
+        width: 24px;
+        height: 24px;
+      }
+    }
+
+    .note-quantity {
+      color: #e31837;
+      font-style: italic;
+    }
+
+    .note-total {
+      color: #4caf50;
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+  }
 }
 
 .total-amount {
@@ -272,6 +307,14 @@
     font-style: italic;
     opacity: 0.9;
     margin-left: 8px;
+  }
+
+  .dye-pack-indicator {
+    font-size: 0.9rem;
+    font-style: italic;
+    opacity: 0.9;
+    margin-left: 8px;
+    color: #e31837;
   }
 }
 
@@ -450,6 +493,212 @@ mat-form-field {
   &.ng-invalid {
     .mat-form-field-outline-thick {
       color: #f44336;
+    }
+  }
+}
+
+// Inventory Validation Styles
+.inventory-section {
+  margin-bottom: 2rem;
+
+  .inventory-card {
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+
+    &.warning {
+      border-left: 4px solid #ff9800;
+    }
+
+    &.error {
+      border-left: 4px solid #f44336;
+    }
+
+    mat-card-header {
+      mat-card-title {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 1.25rem;
+        font-weight: 600;
+      }
+    }
+
+    .validation-messages {
+      margin-bottom: 1.5rem;
+
+      h4 {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
+        font-size: 1rem;
+        font-weight: 600;
+
+        &.error-title {
+          color: #f44336;
+        }
+
+        &.warning-title {
+          color: #ff9800;
+        }
+      }
+
+      ul {
+        margin: 0;
+        padding-left: 1.5rem;
+
+        li {
+          margin-bottom: 0.5rem;
+          line-height: 1.4;
+
+          &.error-item {
+            color: #f44336;
+          }
+
+          &.warning-item {
+            color: #ff9800;
+          }
+        }
+      }
+    }
+
+    .inventory-preview {
+      h4 {
+        margin-bottom: 1rem;
+        font-size: 1rem;
+        font-weight: 600;
+        color: #333;
+      }
+
+      .preview-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1rem;
+
+        .preview-item {
+          padding: 1rem;
+          border: 1px solid #e0e0e0;
+          border-radius: 8px;
+          background-color: #fafafa;
+
+          .preview-denomination {
+            font-weight: 600;
+            color: #1976d2;
+            margin-bottom: 0.5rem;
+          }
+
+          .preview-details {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+
+            span {
+              font-size: 0.875rem;
+
+              &.current {
+                color: #666;
+              }
+
+              &.requested {
+                color: #ff9800;
+                font-weight: 500;
+              }
+
+              &.remaining {
+                color: #4caf50;
+                font-weight: 500;
+
+                &.low {
+                  color: #f44336;
+                  font-weight: 600;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// Rejection Details Styles
+.rejection-section {
+  margin-bottom: 2rem;
+
+  .rejection-card {
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    border-left: 4px solid #f44336;
+
+    &.auto-rejected {
+      border-left-color: #ff5722;
+      background-color: #fff3e0;
+    }
+
+    mat-card-header {
+      mat-card-title {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #f44336;
+      }
+
+      mat-card-subtitle {
+        color: #666;
+        margin-top: 0.5rem;
+      }
+    }
+
+    .rejection-details {
+      .rejection-info {
+        margin-bottom: 1.5rem;
+
+        .info-item {
+          display: flex;
+          margin-bottom: 0.75rem;
+          align-items: flex-start;
+
+          .label {
+            font-weight: 600;
+            color: #333;
+            min-width: 140px;
+            margin-right: 1rem;
+          }
+
+          .value {
+            color: #666;
+            flex: 1;
+            word-break: break-word;
+          }
+        }
+      }
+
+      .rejection-actions {
+        padding: 1rem;
+        background-color: #f5f5f5;
+        border-radius: 8px;
+        border-left: 4px solid #ff9800;
+
+        h4 {
+          margin: 0 0 1rem 0;
+          color: #ff9800;
+          font-size: 1rem;
+          font-weight: 600;
+        }
+
+        .suggestions-list {
+          margin: 0;
+          padding-left: 1.5rem;
+
+          li {
+            margin-bottom: 0.5rem;
+            line-height: 1.4;
+            color: #555;
+          }
+        }
+      }
     }
   }
 }

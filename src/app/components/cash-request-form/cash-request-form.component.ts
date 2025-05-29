@@ -16,11 +16,15 @@ import { MatStepperModule } from '@angular/material/stepper';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatRadioModule } from '@angular/material/radio';
 
 import { User, Department } from '../../models/user.model';
-import { BankNote, NoteDenomination, CashRequest } from '../../models/cash-request.model';
+import { BankNote, NoteDenomination, CashRequest, InventoryAvailability, InventoryStatus, SeriesInventoryAvailability } from '../../models/cash-request.model';
+import { NoteSeries, NOTE_SERIES_LABELS } from '../../models/inventory.model';
 import { UserService } from '../../services/user.service';
 import { CashRequestService } from '../../services/cash-request.service';
+import { InventoryService } from '../../services/inventory.service';
 
 @Component({
   selector: 'app-cash-request-form',
@@ -41,7 +45,9 @@ import { CashRequestService } from '../../services/cash-request.service';
     MatStepperModule,
     MatMenuModule,
     MatDividerModule,
-    MatSlideToggleModule
+    MatSlideToggleModule,
+    MatChipsModule,
+    MatRadioModule
   ],
   templateUrl: './cash-request-form.component.html',
   styleUrl: './cash-request-form.component.scss'
@@ -55,7 +61,20 @@ export class CashRequestFormComponent implements OnInit {
   dateRequested: Date = new Date();
   bankNotes: BankNote[] = [];
   coinsRequested: boolean = false;
+  dyePackRequired: boolean = false;
   comments: string = '';
+
+  // Inventory availability
+  inventoryAvailability: InventoryAvailability[] = [];
+  seriesInventoryAvailability: { [key in NoteDenomination]: SeriesInventoryAvailability[] } = {} as any;
+  InventoryStatus = InventoryStatus;
+  NoteSeries = NoteSeries;
+  NOTE_SERIES_LABELS = NOTE_SERIES_LABELS;
+
+  // Smart requesting features
+  smartMode: boolean = true; // Enable smart series selection by default
+  showSeriesSelection: { [key: number]: boolean } = {};
+  selectedSeries: { [key: number]: NoteSeries | null } = {};
 
   // Available denominations
   denominations = [
@@ -69,6 +88,7 @@ export class CashRequestFormComponent implements OnInit {
   constructor(
     private userService: UserService,
     private cashRequestService: CashRequestService,
+    private inventoryService: InventoryService,
     private snackBar: MatSnackBar,
     private router: Router
   ) {}
@@ -85,6 +105,9 @@ export class CashRequestFormComponent implements OnInit {
 
     // Initialize bank notes with zero quantities
     this.initializeBankNotes();
+
+    // Load inventory availability for requesters
+    this.loadInventoryAvailability();
   }
 
   private initializeBankNotes(): void {
@@ -92,13 +115,6 @@ export class CashRequestFormComponent implements OnInit {
       denomination: denom.value,
       quantity: 0
     }));
-  }
-
-  updateQuantity(denomination: NoteDenomination, quantity: number): void {
-    const note = this.bankNotes.find(n => n.denomination === denomination);
-    if (note) {
-      note.quantity = Math.max(0, quantity);
-    }
   }
 
   getQuantity(denomination: NoteDenomination): number {
@@ -110,12 +126,57 @@ export class CashRequestFormComponent implements OnInit {
     return this.bankNotes.reduce((total, note) => total + (note.denomination * note.quantity), 0);
   }
 
-  getSelectedNotes(): BankNote[] {
-    return this.bankNotes.filter(note => note.quantity > 0);
-  }
-
   onCoinsToggleChange(checked: boolean): void {
     this.coinsRequested = checked;
+  }
+
+  onDyePackToggleChange(checked: boolean): void {
+    this.dyePackRequired = checked;
+  }
+
+  private loadInventoryAvailability(): void {
+    this.inventoryAvailability = this.inventoryService.getInventoryAvailabilityForRequesters();
+    this.seriesInventoryAvailability = this.inventoryService.getAllSeriesInventoryAvailability();
+
+    // Initialize series selection with recommended series
+    this.denominations.forEach(denom => {
+      const seriesOptions = this.seriesInventoryAvailability[denom.value];
+      if (seriesOptions && seriesOptions.length > 0) {
+        const recommended = seriesOptions.find(s => s.isRecommended);
+        this.selectedSeries[denom.value] = recommended ? recommended.series : seriesOptions[0].series;
+      }
+    });
+  }
+
+  getInventoryStatus(denomination: NoteDenomination): InventoryStatus {
+    const availability = this.inventoryAvailability.find(item => item.denomination === denomination);
+    return availability?.status || InventoryStatus.AVAILABLE;
+  }
+
+  getInventoryStatusClass(status: InventoryStatus): string {
+    switch (status) {
+      case InventoryStatus.AVAILABLE:
+        return 'status-available';
+      case InventoryStatus.LOW_STOCK:
+        return 'status-low-stock';
+      case InventoryStatus.OUT_OF_STOCK:
+        return 'status-out-of-stock';
+      default:
+        return 'status-available';
+    }
+  }
+
+  getInventoryStatusLabel(status: InventoryStatus): string {
+    switch (status) {
+      case InventoryStatus.AVAILABLE:
+        return 'Available';
+      case InventoryStatus.LOW_STOCK:
+        return 'Low Stock';
+      case InventoryStatus.OUT_OF_STOCK:
+        return 'Out of Stock';
+      default:
+        return 'Available';
+    }
   }
 
   isFormValid(): boolean {
@@ -136,6 +197,7 @@ export class CashRequestFormComponent implements OnInit {
       department: this.selectedDepartment,
       bankNotes: this.getSelectedNotes(),
       coinsRequested: this.coinsRequested || undefined,
+      dyePackRequired: this.dyePackRequired || undefined,
       dateRequested: this.dateRequested,
       comments: this.comments || undefined
     };
@@ -165,5 +227,137 @@ export class CashRequestFormComponent implements OnInit {
 
   formatCurrency(amount: number): string {
     return `R${amount.toLocaleString()}`;
+  }
+
+  // Smart requesting methods
+  toggleSeriesSelection(denomination: NoteDenomination): void {
+    this.showSeriesSelection[denomination] = !this.showSeriesSelection[denomination];
+  }
+
+  onSeriesChange(denomination: NoteDenomination, series: NoteSeries): void {
+    this.selectedSeries[denomination] = series;
+    this.validateSeriesAvailability(denomination);
+  }
+
+  validateSeriesAvailability(denomination: NoteDenomination): void {
+    const quantity = this.getQuantity(denomination);
+    const selectedSeries = this.selectedSeries[denomination];
+
+    if (quantity > 0 && selectedSeries) {
+      const available = this.inventoryService.getSeriesAvailableQuantity(denomination, selectedSeries);
+
+      if (quantity > available) {
+        this.snackBar.open(
+          `Warning: Only ${available} x R${denomination} available in ${NOTE_SERIES_LABELS[selectedSeries as keyof typeof NOTE_SERIES_LABELS]}`,
+          'Close',
+          { duration: 5000 }
+        );
+      }
+    }
+  }
+
+  getSeriesOptions(denomination: NoteDenomination): SeriesInventoryAvailability[] {
+    return this.seriesInventoryAvailability[denomination] || [];
+  }
+
+  getSelectedSeriesLabel(denomination: NoteDenomination): string {
+    const selectedSeries = this.selectedSeries[denomination];
+    return selectedSeries ? NOTE_SERIES_LABELS[selectedSeries as keyof typeof NOTE_SERIES_LABELS] : 'Auto-select';
+  }
+
+  getSeriesLabel(series: NoteSeries): string {
+    return NOTE_SERIES_LABELS[series as keyof typeof NOTE_SERIES_LABELS];
+  }
+
+  getSeriesStatusClass(seriesAvailability: SeriesInventoryAvailability): string {
+    switch (seriesAvailability.status) {
+      case InventoryStatus.AVAILABLE:
+        return 'series-available';
+      case InventoryStatus.LOW_STOCK:
+        return 'series-low-stock';
+      case InventoryStatus.OUT_OF_STOCK:
+        return 'series-out-of-stock';
+      default:
+        return '';
+    }
+  }
+
+  getSeriesStatusIcon(seriesAvailability: SeriesInventoryAvailability): string {
+    switch (seriesAvailability.status) {
+      case InventoryStatus.AVAILABLE:
+        return 'check_circle';
+      case InventoryStatus.LOW_STOCK:
+        return 'warning';
+      case InventoryStatus.OUT_OF_STOCK:
+        return 'error';
+      default:
+        return 'help';
+    }
+  }
+
+  isSeriesRecommended(seriesAvailability: SeriesInventoryAvailability): boolean {
+    return seriesAvailability.isRecommended || false;
+  }
+
+  onSmartModeToggle(enabled: boolean): void {
+    this.smartMode = enabled;
+    if (enabled) {
+      // Auto-select recommended series
+      this.loadInventoryAvailability();
+    } else {
+      // Clear series selections
+      this.selectedSeries = {};
+    }
+  }
+
+  // Override the updateQuantity method to include series validation
+  updateQuantity(denomination: NoteDenomination, quantity: number): void {
+    const note = this.bankNotes.find(n => n.denomination === denomination);
+    if (note) {
+      note.quantity = Math.max(0, quantity);
+
+      // Add series information if smart mode is enabled
+      if (this.smartMode && this.selectedSeries[denomination]) {
+        note.series = this.selectedSeries[denomination] || undefined;
+      }
+
+      // Validate availability in real-time
+      if (quantity > 0) {
+        this.validateSeriesAvailability(denomination);
+      }
+    }
+  }
+
+  // Override getSelectedNotes to include series information
+  getSelectedNotes(): BankNote[] {
+    return this.bankNotes.filter(note => note.quantity > 0).map(note => ({
+      ...note,
+      series: this.smartMode && this.selectedSeries[note.denomination] ? this.selectedSeries[note.denomination] || undefined : undefined
+    }));
+  }
+
+  // Get real-time availability warnings
+  getAvailabilityWarnings(): string[] {
+    const warnings: string[] = [];
+
+    this.getSelectedNotes().forEach(note => {
+      if (note.series) {
+        const available = this.inventoryService.getSeriesAvailableQuantity(note.denomination, note.series);
+        if (note.quantity > available) {
+          warnings.push(`R${note.denomination}: Requested ${note.quantity}, only ${available} available in ${NOTE_SERIES_LABELS[note.series as keyof typeof NOTE_SERIES_LABELS]}`);
+        }
+      } else {
+        const totalAvailable = this.inventoryService.getAvailableQuantity(note.denomination);
+        if (note.quantity > totalAvailable) {
+          warnings.push(`R${note.denomination}: Requested ${note.quantity}, only ${totalAvailable} available across all series`);
+        }
+      }
+    });
+
+    return warnings;
+  }
+
+  hasAvailabilityWarnings(): boolean {
+    return this.getAvailabilityWarnings().length > 0;
   }
 }

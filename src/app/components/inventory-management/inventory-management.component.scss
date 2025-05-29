@@ -1,0 +1,326 @@
+// Use CSS variables directly
+
+.inventory-management {
+  min-height: 100vh;
+  background-color: var(--absa-gray-light);
+}
+
+// Header
+.header-toolbar {
+  background: linear-gradient(135deg, var(--absa-red) 0%, var(--absa-dark-blue) 100%);
+  color: var(--absa-white);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+
+  .back-button {
+    margin-right: 1rem;
+  }
+
+  .header-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.2rem;
+    font-weight: 600;
+  }
+
+  .spacer {
+    flex: 1;
+  }
+
+  button {
+    color: var(--absa-white);
+  }
+}
+
+// Content Container
+.content-container {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+
+  @media (max-width: 768px) {
+    padding: 1rem;
+  }
+}
+
+// Summary Section
+.summary-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+
+  .summary-card {
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+    }
+
+    &.total-value {
+      border-left: 4px solid var(--absa-green);
+    }
+
+    &.total-notes {
+      border-left: 4px solid var(--absa-light-blue);
+    }
+
+    &.low-stock {
+      border-left: 4px solid var(--absa-gold);
+    }
+
+    .summary-content {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.5rem 0;
+
+      .summary-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background-color: var(--absa-gray-light);
+
+        mat-icon {
+          font-size: 2rem;
+          width: 2rem;
+          height: 2rem;
+          color: var(--absa-dark-blue);
+        }
+      }
+
+      .summary-details {
+        flex: 1;
+
+        .summary-value {
+          font-size: 2rem;
+          font-weight: 700;
+          color: var(--absa-dark-blue);
+          line-height: 1;
+        }
+
+        .summary-label {
+          font-size: 0.9rem;
+          color: var(--absa-gray-medium);
+          margin-top: 0.25rem;
+        }
+      }
+    }
+  }
+}
+
+// Inventory Section
+.inventory-section {
+  .inventory-tabs {
+    background-color: var(--absa-white);
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    overflow: hidden;
+
+    ::ng-deep .mat-tab-header {
+      background-color: var(--absa-gray-light);
+      border-bottom: 2px solid var(--absa-red);
+    }
+
+    ::ng-deep .mat-tab-label {
+      color: var(--absa-gray-dark);
+      font-weight: 500;
+
+      &.mat-tab-label-active {
+        color: var(--absa-red);
+      }
+    }
+
+    ::ng-deep .mat-ink-bar {
+      background-color: var(--absa-red);
+      height: 3px;
+    }
+
+    .tab-content {
+      padding: 2rem;
+
+      @media (max-width: 768px) {
+        padding: 1rem;
+      }
+    }
+  }
+}
+
+// Series Summary Card
+.series-summary-card {
+  margin-bottom: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+
+  .series-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+
+    .stat-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem;
+      background-color: var(--absa-gray-light);
+      border-radius: 6px;
+
+      .stat-label {
+        font-weight: 500;
+        color: var(--absa-gray-medium);
+      }
+
+      .stat-value {
+        font-weight: 700;
+        color: var(--absa-dark-blue);
+        font-size: 1.1rem;
+      }
+    }
+  }
+}
+
+// Inventory Table Card
+.inventory-table-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+
+  mat-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    .card-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+  }
+
+  .inventory-table {
+    width: 100%;
+    margin-top: 1rem;
+
+    th {
+      background-color: var(--absa-gray-light);
+      color: var(--absa-dark-blue);
+      font-weight: 600;
+    }
+
+    td {
+      color: var(--absa-gray-dark);
+    }
+
+    .denomination-cell {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 500;
+
+      mat-icon {
+        color: var(--absa-green);
+      }
+    }
+
+    .quantity-value {
+      font-weight: 600;
+      color: var(--absa-dark-blue);
+    }
+
+    .value-amount {
+      font-weight: 600;
+      color: var(--absa-green);
+    }
+
+    .mat-row:hover {
+      background-color: rgba(227, 24, 55, 0.05);
+    }
+  }
+}
+
+// Status Chips
+mat-chip {
+  &.status-in-stock {
+    background-color: var(--absa-green) !important;
+    color: var(--absa-white) !important;
+  }
+
+  &.status-watch {
+    background-color: var(--absa-light-blue) !important;
+    color: var(--absa-white) !important;
+  }
+
+  &.status-medium {
+    background-color: var(--absa-gold) !important;
+    color: var(--absa-white) !important;
+  }
+
+  &.status-low {
+    background-color: #ff9800 !important;
+    color: var(--absa-white) !important;
+  }
+
+  &.status-critical {
+    background-color: #f44336 !important;
+    color: var(--absa-white) !important;
+  }
+
+  &.status-unknown {
+    background-color: var(--absa-gray-medium) !important;
+    color: var(--absa-white) !important;
+  }
+}
+
+// Action Buttons
+.action-buttons {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+
+  button {
+    min-width: 32px;
+    width: 32px;
+    height: 32px;
+
+    mat-icon {
+      font-size: 1.2rem;
+      width: 1.2rem;
+      height: 1.2rem;
+    }
+
+    &[color="primary"] {
+      color: var(--absa-red);
+
+      &:hover {
+        background-color: rgba(227, 24, 55, 0.1);
+      }
+    }
+  }
+}
+
+// No Data State
+.no-data {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--absa-gray-medium);
+
+  mat-icon {
+    font-size: 4rem;
+    width: 4rem;
+    height: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+  }
+
+  p {
+    font-size: 1.1rem;
+    margin: 0;
+  }
+}

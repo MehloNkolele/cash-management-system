@@ -82,7 +82,6 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
   totalInventoryValue = 0;
   totalActiveRequests = 0;
   criticalAlerts = 0;
-  complianceScore = 0;
 
   // Display columns for tables
   requestColumns: string[] = ['id', 'requester', 'amount', 'status', 'deadline', 'actions'];
@@ -170,9 +169,9 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
   private loadRequestData(): void {
     const allRequests = this.cashRequestService.getAllRequests();
 
-    // Active requests (not completed or cancelled)
+    // Active requests (not completed, cancelled, or rejected)
     this.activeRequests = allRequests.filter(request =>
-      ![RequestStatus.COMPLETED, RequestStatus.CANCELLED].includes(request.status)
+      ![RequestStatus.COMPLETED, RequestStatus.CANCELLED, RequestStatus.REJECTED].includes(request.status)
     );
 
     this.totalActiveRequests = this.activeRequests.length;
@@ -194,16 +193,13 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
   private loadLogData(): void {
     const logSummary = this.systemLogService.getLogSummary(7); // Last 7 days
     this.recentLogs = logSummary.recentActivity.slice(0, 5);
-    
-    // Calculate compliance score based on recent activity
-    const totalLogs = logSummary.totalLogs;
-    const problemLogs = logSummary.criticalCount + logSummary.errorCount;
-    this.complianceScore = totalLogs > 0 ? Math.round(((totalLogs - problemLogs) / totalLogs) * 100) : 100;
   }
 
   private loadNotifications(): void {
     this.notifications = this.notificationService.getNotificationsForUser(this.currentUser?.id || '');
     this.unreadNotificationCount = this.notifications.filter(n => !n.isRead).length;
+
+
   }
 
   // Action Methods
@@ -383,6 +379,10 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
     });
   }
 
+  onViewInventory(): void {
+    this.router.navigate(['/inventory-management']);
+  }
+
   onRefreshData(): void {
     this.loadDashboardData();
     this.snackBar.open('Dashboard data refreshed', 'Close', { duration: 2000 });
@@ -405,6 +405,48 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
   // Utility Methods
   getStatusClass(status: RequestStatus): string {
     return `status-${status.toLowerCase()}`;
+  }
+
+  getStatusColor(status: RequestStatus): string {
+    switch (status) {
+      case RequestStatus.PENDING:
+        return 'warn';
+      case RequestStatus.APPROVED:
+        return 'accent';
+      case RequestStatus.ISSUED:
+        return 'primary';
+      case RequestStatus.RETURNED:
+        return 'accent';
+      case RequestStatus.COMPLETED:
+        return 'primary';
+      case RequestStatus.CANCELLED:
+        return 'warn';
+      case RequestStatus.REJECTED:
+        return 'warn';
+      default:
+        return '';
+    }
+  }
+
+  getStatusIcon(status: RequestStatus): string {
+    switch (status) {
+      case RequestStatus.PENDING:
+        return 'schedule';
+      case RequestStatus.APPROVED:
+        return 'check_circle';
+      case RequestStatus.ISSUED:
+        return 'payments';
+      case RequestStatus.RETURNED:
+        return 'assignment_return';
+      case RequestStatus.COMPLETED:
+        return 'done_all';
+      case RequestStatus.CANCELLED:
+        return 'cancel';
+      case RequestStatus.REJECTED:
+        return 'block';
+      default:
+        return 'help';
+    }
   }
 
   getSeverityClass(severity: AlertSeverity | LogSeverity): string {
@@ -481,6 +523,10 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
 
   navigateToRecentActivity(): void {
     this.navigateToTab(2); // Recent Activity is the third tab (index 2)
+  }
+
+  navigateToCriticalAlerts(): void {
+    this.router.navigate(['/alerts-overview']);
   }
 
   // Log Details Methods

@@ -84,6 +84,55 @@
           </div>
         </mat-card-content>
       </mat-card>
+
+      <!-- Inventory Summary Cards -->
+      <mat-card class="stat-card inventory-value-card">
+        <mat-card-content>
+          <div class="stat-content">
+            <div class="stat-icon">
+              <mat-icon>account_balance_wallet</mat-icon>
+            </div>
+            <div class="stat-details">
+              <div class="stat-number">{{ formatCurrency(totalInventoryValue) }}</div>
+              <div class="stat-label">Total Inventory Value</div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card inventory-notes-card">
+        <mat-card-content>
+          <div class="stat-content">
+            <div class="stat-icon">
+              <mat-icon>receipt</mat-icon>
+            </div>
+            <div class="stat-details">
+              <div class="stat-number">{{ formatInventoryNumber(totalInventoryNotes) }}</div>
+              <div class="stat-label">Total Notes Available</div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Quick Actions Section -->
+    <div class="actions-section">
+      <mat-card class="actions-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>flash_on</mat-icon>
+            Quick Actions
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="actions-grid">
+            <button mat-raised-button color="primary" (click)="onViewInventory()" class="action-button">
+              <mat-icon>inventory</mat-icon>
+              View Inventory
+            </button>
+          </div>
+        </mat-card-content>
+      </mat-card>
     </div>
 
     <!-- Requests Tabs -->
@@ -116,6 +165,24 @@
                     <ng-container matColumnDef="amount">
                       <th mat-header-cell *matHeaderCellDef>Amount</th>
                       <td mat-cell *matCellDef="let request">{{ formatCurrency(calculateTotalAmount(request)) }}</td>
+                    </ng-container>
+
+                    <!-- Inventory Status Column -->
+                    <ng-container matColumnDef="inventory">
+                      <th mat-header-cell *matHeaderCellDef>Inventory Status</th>
+                      <td mat-cell *matCellDef="let request">
+                        <div class="inventory-status">
+                          <mat-icon
+                            [color]="hasInventoryErrors(request) ? 'warn' : hasInventoryWarnings(request) ? 'accent' : 'primary'"
+                            [title]="hasInventoryErrors(request) ? 'Insufficient inventory' : hasInventoryWarnings(request) ? 'Low inventory warning' : 'Inventory available'">
+                            {{ hasInventoryErrors(request) ? 'error' : hasInventoryWarnings(request) ? 'warning' : 'check_circle' }}
+                          </mat-icon>
+                          <span class="inventory-text"
+                                [ngClass]="{ 'error': hasInventoryErrors(request), 'warning': hasInventoryWarnings(request), 'success': !hasInventoryErrors(request) && !hasInventoryWarnings(request) }">
+                            {{ hasInventoryErrors(request) ? 'Insufficient' : hasInventoryWarnings(request) ? 'Low Stock' : 'Available' }}
+                          </span>
+                        </div>
+                      </td>
                     </ng-container>
 
                     <!-- Date Requested Column -->
@@ -181,6 +248,24 @@
                       <td mat-cell *matCellDef="let request">{{ formatCurrency(calculateTotalAmount(request)) }}</td>
                     </ng-container>
 
+                    <!-- Inventory Status Column -->
+                    <ng-container matColumnDef="inventory">
+                      <th mat-header-cell *matHeaderCellDef>Inventory Status</th>
+                      <td mat-cell *matCellDef="let request">
+                        <div class="inventory-status">
+                          <mat-icon
+                            [color]="hasInventoryErrors(request) ? 'warn' : hasInventoryWarnings(request) ? 'accent' : 'primary'"
+                            [title]="hasInventoryErrors(request) ? 'Insufficient inventory' : hasInventoryWarnings(request) ? 'Low inventory warning' : 'Inventory available'">
+                            {{ hasInventoryErrors(request) ? 'error' : hasInventoryWarnings(request) ? 'warning' : 'check_circle' }}
+                          </mat-icon>
+                          <span class="inventory-text"
+                                [ngClass]="{ 'error': hasInventoryErrors(request), 'warning': hasInventoryWarnings(request), 'success': !hasInventoryErrors(request) && !hasInventoryWarnings(request) }">
+                            {{ hasInventoryErrors(request) ? 'Insufficient' : hasInventoryWarnings(request) ? 'Low Stock' : 'Available' }}
+                          </span>
+                        </div>
+                      </td>
+                    </ng-container>
+
                     <!-- Date Requested Column -->
                     <ng-container matColumnDef="dateRequested">
                       <th mat-header-cell *matHeaderCellDef>Date Requested</th>
@@ -242,6 +327,24 @@
                     <ng-container matColumnDef="amount">
                       <th mat-header-cell *matHeaderCellDef>Amount</th>
                       <td mat-cell *matCellDef="let request">{{ formatCurrency(calculateTotalAmount(request)) }}</td>
+                    </ng-container>
+
+                    <!-- Inventory Status Column -->
+                    <ng-container matColumnDef="inventory">
+                      <th mat-header-cell *matHeaderCellDef>Inventory Status</th>
+                      <td mat-cell *matCellDef="let request">
+                        <div class="inventory-status">
+                          <mat-icon
+                            [color]="hasInventoryErrors(request) ? 'warn' : hasInventoryWarnings(request) ? 'accent' : 'primary'"
+                            [title]="hasInventoryErrors(request) ? 'Insufficient inventory' : hasInventoryWarnings(request) ? 'Low inventory warning' : 'Inventory available'">
+                            {{ hasInventoryErrors(request) ? 'error' : hasInventoryWarnings(request) ? 'warning' : 'check_circle' }}
+                          </mat-icon>
+                          <span class="inventory-text"
+                                [ngClass]="{ 'error': hasInventoryErrors(request), 'warning': hasInventoryWarnings(request), 'success': !hasInventoryErrors(request) && !hasInventoryWarnings(request) }">
+                            {{ hasInventoryErrors(request) ? 'Insufficient' : hasInventoryWarnings(request) ? 'Low Stock' : 'Available' }}
+                          </span>
+                        </div>
+                      </td>
                     </ng-container>
 
                     <!-- Date Requested Column -->

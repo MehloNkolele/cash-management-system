@@ -144,4 +144,9 @@ export class UserService {
     const currentUser = this.getCurrentUser();
     return currentUser?.role === UserRole.MANAGER || currentUser?.role === UserRole.ADMIN;
   }
+
+  hasMoneyHandlerPrivileges(): boolean {
+    const currentUser = this.getCurrentUser();
+    return currentUser?.role === UserRole.ISSUER || this.hasManagerPrivileges();
+  }
 }

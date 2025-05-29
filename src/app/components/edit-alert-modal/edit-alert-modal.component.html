@@ -1,0 +1,155 @@
+<div class="edit-alert-modal">
+  <h2 mat-dialog-title>
+    <mat-icon>{{ getSeverityIcon(alert.severity) }}</mat-icon>
+    Edit Alert - {{ NOTE_SERIES_LABELS[alert.series] }} R{{ alert.denomination }}
+    <mat-chip [class]="getSeverityClass(alert.severity)" class="severity-chip">
+      <mat-icon>{{ getSeverityIcon(alert.severity) }}</mat-icon>
+      {{ alert.severity | titlecase }}
+    </mat-chip>
+  </h2>
+
+  <mat-dialog-content>
+    <div class="edit-alert-content">
+      <!-- Alert Information -->
+      <mat-card class="info-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>info</mat-icon>
+            Current Alert Information
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="info-grid">
+            <div class="info-item">
+              <label>Note Series:</label>
+              <span class="value">{{ NOTE_SERIES_LABELS[alert.series] }}</span>
+            </div>
+            <div class="info-item">
+              <label>Denomination:</label>
+              <span class="value denomination">
+                <mat-icon>payments</mat-icon>
+                R{{ alert.denomination }}
+              </span>
+            </div>
+            <div class="info-item">
+              <label>Current Stock:</label>
+              <span class="value stock-critical">{{ alert.currentQuantity }}</span>
+            </div>
+            <div class="info-item">
+              <label>Minimum Threshold:</label>
+              <span class="value">{{ alert.minimumThreshold }}</span>
+            </div>
+            <div class="info-item">
+              <label>Stock Value:</label>
+              <span class="value">{{ formatCurrency(alert.currentQuantity * alert.denomination) }}</span>
+            </div>
+            <div class="info-item">
+              <label>Shortage:</label>
+              <span class="value shortage">{{ alert.minimumThreshold - alert.currentQuantity }} notes</span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Add Stock Section -->
+      <mat-card class="action-card add-stock-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>add_circle</mat-icon>
+            Add Stock
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <p class="action-description">
+            Add more notes to resolve this low stock alert
+          </p>
+          <div class="action-form">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Quantity to Add</mat-label>
+              <input matInput 
+                     type="number" 
+                     [(ngModel)]="addQuantity" 
+                     min="1" 
+                     placeholder="Enter quantity">
+              <mat-icon matSuffix>inventory</mat-icon>
+            </mat-form-field>
+            
+            <div class="calculation-info" *ngIf="addQuantity > 0">
+              <div class="calc-item">
+                <span class="calc-label">New Stock Level:</span>
+                <span class="calc-value">{{ alert.currentQuantity + addQuantity }}</span>
+              </div>
+              <div class="calc-item">
+                <span class="calc-label">Added Value:</span>
+                <span class="calc-value">{{ formatCurrency(addQuantity * alert.denomination) }}</span>
+              </div>
+            </div>
+
+            <button mat-raised-button 
+                    color="primary" 
+                    (click)="onAddStock()" 
+                    [disabled]="!isAddStockValid()"
+                    class="action-button">
+              <mat-icon>add</mat-icon>
+              Add {{ addQuantity || 0 }} Notes
+            </button>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-divider></mat-divider>
+
+      <!-- Update Threshold Section -->
+      <mat-card class="action-card threshold-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>tune</mat-icon>
+            Update Minimum Threshold
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <p class="action-description">
+            Adjust the minimum stock threshold for this denomination
+          </p>
+          <div class="action-form">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>New Minimum Threshold</mat-label>
+              <input matInput 
+                     type="number" 
+                     [(ngModel)]="newThreshold" 
+                     min="0" 
+                     placeholder="Enter new threshold">
+              <mat-icon matSuffix>rule</mat-icon>
+            </mat-form-field>
+            
+            <div class="threshold-info" *ngIf="newThreshold !== alert.minimumThreshold">
+              <div class="threshold-change">
+                <span class="change-label">Change:</span>
+                <span class="change-value" 
+                      [ngClass]="{ 'increase': newThreshold > alert.minimumThreshold, 'decrease': newThreshold < alert.minimumThreshold }">
+                  {{ newThreshold > alert.minimumThreshold ? '+' : '' }}{{ newThreshold - alert.minimumThreshold }}
+                </span>
+              </div>
+            </div>
+
+            <button mat-raised-button 
+                    color="accent" 
+                    (click)="onUpdateThreshold()" 
+                    [disabled]="!isUpdateThresholdValid()"
+                    class="action-button">
+              <mat-icon>update</mat-icon>
+              Update Threshold
+            </button>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button (click)="onCancel()">
+      <mat-icon>close</mat-icon>
+      Close
+    </button>
+  </mat-dialog-actions>
+</div>

@@ -122,6 +122,8 @@ export class DashboardComponent implements OnInit {
         return 'primary';
       case RequestStatus.CANCELLED:
         return 'warn';
+      case RequestStatus.REJECTED:
+        return 'warn';
       default:
         return '';
     }
@@ -141,6 +143,8 @@ export class DashboardComponent implements OnInit {
         return 'done_all';
       case RequestStatus.CANCELLED:
         return 'cancel';
+      case RequestStatus.REJECTED:
+        return 'block';
       default:
         return 'help';
     }
