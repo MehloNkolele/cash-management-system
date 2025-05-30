@@ -72,9 +72,26 @@
 }
 
 .dashboard-content {
-  padding: 2rem;
-  max-width: 1400px;
+  padding: 1.5rem 2rem;
+  max-width: 1800px;
   margin: 0 auto;
+  width: 100%;
+
+  // Large screens - utilize more space
+  @media (min-width: 1600px) {
+    max-width: 95%;
+    padding: 1.5rem 3rem;
+  }
+
+  @media (min-width: 1200px) and (max-width: 1599px) {
+    max-width: 1600px;
+    padding: 1.5rem 2.5rem;
+  }
+
+  @media (min-width: 900px) and (max-width: 1199px) {
+    max-width: 1200px;
+    padding: 1.5rem 2rem;
+  }
 
   @media (max-width: 768px) {
     padding: 1rem;
@@ -116,7 +133,25 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 1.5rem;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
+
+  // Large screens - optimize for 4 columns
+  @media (min-width: 1600px) {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2rem;
+    max-width: 1400px;
+    margin: 0 auto 1.5rem auto;
+  }
+
+  @media (min-width: 1200px) and (max-width: 1599px) {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.75rem;
+  }
+
+  @media (min-width: 900px) and (max-width: 1199px) {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
 
   @media (max-width: 768px) {
     grid-template-columns: 1fr;

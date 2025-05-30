@@ -35,38 +35,38 @@ export class UserService {
       {
         id: '1',
         ab: 'AB001',
-        fullName: 'Thando',
-        email: 'thando@company.com',
+        fullName: 'Kamo',
+        email: 'kamoe@absa.africa',
         contactNumber: '+27 11 123 4567',
         role: UserRole.ISSUER,
-        department: 'Alternative Channels'
+        department: 'APC'
       },
       {
         id: '2',
         ab: 'AB002',
-        fullName: 'Tiisetso',
-        email: 'tiisetso@company.com',
+        fullName: 'Maboku',
+        email: 'maboku@absa.africa',
         contactNumber: '+27 11 123 4568',
         role: UserRole.MANAGER,
-        department: 'Alternative Channels'
+        department: 'NCR'
       },
       {
         id: '3',
         ab: 'AB003',
         fullName: 'Bennet',
-        email: 'bennet@company.com',
+        email: 'bennet@absa.africa',
         contactNumber: '+27 11 123 4569',
         role: UserRole.REQUESTER,
-        department: 'QA Testing'
+        department: 'APC'
       },
       {
         id: '4',
         ab: 'AB004',
         fullName: 'Judas',
-        email: 'judas@company.com',
+        email: 'judas@absa.africa',
         contactNumber: '+27 11 123 4570',
         role: UserRole.REQUESTER,
-        department: 'QA Testing'
+        department: 'FFA'
       }
     ];
 
@@ -75,11 +75,9 @@ export class UserService {
 
   private createSampleDepartments(): void {
     const departments: Department[] = [
-      { id: '1', name: 'Alternative Channels' },
-      { id: '2', name: 'QA Testing' },
-      { id: '3', name: 'Digital Banking' },
-      { id: '4', name: 'Mobile Banking' },
-      { id: '5', name: 'Self Service' }
+      { id: '1', name: 'APC' },
+      { id: '2', name: 'FFA' },
+      { id: '3', name: 'NCR' }
     ];
 
     this.localStorageService.setItem(this.DEPARTMENTS_KEY, departments);

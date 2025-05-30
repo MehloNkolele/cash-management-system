@@ -72,11 +72,33 @@
 }
 
 .dashboard-content {
-  padding: 2rem;
-  max-width: 1200px;
+  padding: 1.5rem 2rem;
+  max-width: 1800px;
   margin: 0 auto;
+  width: 100%;
 
-  @media (max-width: 768px) {
+  // Large screens - utilize more space
+  @media (min-width: 1600px) {
+    max-width: 95%;
+    padding: 1.5rem 3rem;
+  }
+
+  @media (min-width: 1200px) and (max-width: 1599px) {
+    max-width: 1600px;
+    padding: 1.5rem 2.5rem;
+  }
+
+  @media (min-width: 900px) and (max-width: 1199px) {
+    max-width: 1200px;
+    padding: 1.5rem 2rem;
+  }
+
+  // Small-medium screens - reduced padding
+  @media (min-width: 600px) and (max-width: 899px) {
+    padding: 1.5rem;
+  }
+
+  @media (max-width: 599px) {
     padding: 1rem;
   }
 }
@@ -91,8 +113,20 @@
   gap: 1.5rem;
   margin-bottom: 2rem;
 
+  // Large screens - optimize for 4 cards in a row
+  @media (min-width: 1200px) {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2rem;
+  }
+
+  @media (min-width: 900px) and (max-width: 1199px) {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
+    gap: 1rem;
   }
 }
 

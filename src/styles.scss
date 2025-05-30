@@ -179,6 +179,59 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
+// Large screen optimizations
+@media (min-width: 1600px) {
+  .large-screen-optimize {
+    max-width: 95% !important;
+    margin: 0 auto !important;
+  }
+
+  // Optimize container spacing for large screens
+  .mat-card {
+    margin-bottom: 1.5rem !important;
+  }
+
+  // Better table spacing on large screens
+  .mat-table {
+    th, td {
+      padding: 1rem 1.5rem !important;
+    }
+  }
+
+  // Optimize form layouts for large screens
+  .mat-form-field {
+    margin-bottom: 1.5rem !important;
+  }
+}
+
+@media (min-width: 1200px) and (max-width: 1599px) {
+  .medium-large-optimize {
+    max-width: 1600px !important;
+    margin: 0 auto !important;
+  }
+}
+
+// Container width optimizations
+.container-responsive {
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 1rem;
+
+  @media (min-width: 1600px) {
+    max-width: 95%;
+    padding: 0 2rem;
+  }
+
+  @media (min-width: 1200px) and (max-width: 1599px) {
+    max-width: 1600px;
+    padding: 0 1.5rem;
+  }
+
+  @media (min-width: 900px) and (max-width: 1199px) {
+    max-width: 1200px;
+  }
+}
+
 .mt-1 { margin-top: 0.5rem; }
 .mt-2 { margin-top: 1rem; }
 .mt-3 { margin-top: 1.5rem; }

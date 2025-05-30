@@ -1,61 +1,58 @@
 <div class="cash-request-wizard">
-  <!-- Enhanced Header with Progress -->
-  <div class="wizard-header">
-    <div class="header-background"></div>
-    <div class="header-content">
-      <div class="header-top">
-        <button mat-icon-button (click)="goBack()" class="back-button">
-          <mat-icon>arrow_back</mat-icon>
-        </button>
-        <div class="header-logo clickable-logo" (click)="navigateToDashboard()">
-          <img
-            src="assets/images/Absa_logo.png"
-            alt="Absa Bank Logo"
-            class="absa-logo"
-            loading="lazy"
-            onerror="this.style.display='none'">
-        </div>
-        <div class="header-actions">
-          <button mat-icon-button [matMenuTriggerFor]="userMenu" class="user-menu-button">
-            <mat-icon>account_circle</mat-icon>
-          </button>
-        </div>
-      </div>
+  <!-- Standardized Navigation Toolbar -->
+  <mat-toolbar color="primary" class="app-toolbar">
+    <button mat-icon-button (click)="goBack()" class="back-button" title="Go Back">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
 
-      <div class="header-main">
-        <h1 class="wizard-title">
-          <mat-icon class="title-icon">request_quote</mat-icon>
-          New Cash Request
-        </h1>
-        <p class="wizard-subtitle">Secure cash management for Alternative Channels</p>
-      </div>
+    <div class="toolbar-logo clickable-logo" (click)="navigateToDashboard()">
+      <img
+        src="assets/images/Absa_logo.png"
+        alt="Absa Bank Logo"
+        class="toolbar-absa-logo"
+        loading="lazy"
+        onerror="this.style.display='none'">
+    </div>
 
-      <!-- Progress Indicator -->
-      <div class="progress-container">
-        <div class="progress-steps">
-          <div class="step" [class.active]="currentStep === 1" [class.completed]="currentStep > 1">
-            <div class="step-circle">
-              <mat-icon *ngIf="currentStep > 1">check</mat-icon>
-              <span *ngIf="currentStep <= 1">1</span>
-            </div>
-            <span class="step-label">Details</span>
+    <span class="toolbar-title">Cash Management System - New Request</span>
+
+    <span class="toolbar-spacer"></span>
+
+    <button mat-icon-button [matMenuTriggerFor]="userMenu" class="user-menu-button" title="User Menu">
+      <mat-icon>account_circle</mat-icon>
+    </button>
+  </mat-toolbar>
+
+  <!-- Progress Steps Section -->
+  <div class="progress-section">
+    <div class="progress-container">
+      <div class="progress-steps">
+        <div class="progress-step" [class.active]="currentStep === 1" [class.completed]="currentStep > 1" (click)="goToStep(1)">
+          <div class="step-circle">
+            <span class="step-number" *ngIf="currentStep <= 1">1</span>
+            <mat-icon *ngIf="currentStep > 1" class="step-check">check</mat-icon>
           </div>
-          <div class="step-connector" [class.completed]="currentStep > 1"></div>
-          <div class="step" [class.active]="currentStep === 2" [class.completed]="currentStep > 2">
-            <div class="step-circle">
-              <mat-icon *ngIf="currentStep > 2">check</mat-icon>
-              <span *ngIf="currentStep <= 2">2</span>
-            </div>
-            <span class="step-label">Selection</span>
+          <span class="step-label">Details</span>
+        </div>
+
+        <div class="progress-line" [class.completed]="currentStep > 1"></div>
+
+        <div class="progress-step" [class.active]="currentStep === 2" [class.completed]="currentStep > 2" (click)="goToStep(2)">
+          <div class="step-circle">
+            <span class="step-number" *ngIf="currentStep <= 2">2</span>
+            <mat-icon *ngIf="currentStep > 2" class="step-check">check</mat-icon>
           </div>
-          <div class="step-connector" [class.completed]="currentStep > 2"></div>
-          <div class="step" [class.active]="currentStep === 3" [class.completed]="currentStep > 3">
-            <div class="step-circle">
-              <mat-icon *ngIf="currentStep > 3">check</mat-icon>
-              <span *ngIf="currentStep <= 3">3</span>
-            </div>
-            <span class="step-label">Review</span>
+          <span class="step-label">Selection</span>
+        </div>
+
+        <div class="progress-line" [class.completed]="currentStep > 2"></div>
+
+        <div class="progress-step" [class.active]="currentStep === 3" [class.completed]="currentStep > 3" (click)="goToStep(3)">
+          <div class="step-circle">
+            <span class="step-number" *ngIf="currentStep <= 3">3</span>
+            <mat-icon *ngIf="currentStep > 3" class="step-check">check</mat-icon>
           </div>
+          <span class="step-label">Review</span>
         </div>
       </div>
     </div>
@@ -69,9 +66,6 @@
       <div class="wizard-step" *ngIf="currentStep === 1" [@slideIn]>
         <div class="step-container">
           <div class="step-header">
-            <div class="step-icon-container">
-              <mat-icon class="step-icon">person</mat-icon>
-            </div>
             <div class="step-info">
               <h2 class="step-title">Requester Information</h2>
               <p class="step-description">Please verify your details before proceeding</p>
@@ -103,21 +97,17 @@
                   <mat-form-field appearance="fill" class="modern-field">
                     <mat-label>Select Department</mat-label>
                     <mat-select [(ngModel)]="selectedDepartment" name="department" required>
-                      <mat-option value="QA Testing">
+                      <mat-option value="APC">
                         <mat-icon>bug_report</mat-icon>
-                        QA Testing
+                        APC
                       </mat-option>
-                      <mat-option value="Alternative Channels">
+                      <mat-option value="FFA">
                         <mat-icon>devices</mat-icon>
-                        Alternative Channels
+                        FFA
                       </mat-option>
-                      <mat-option value="Digital Banking">
-                        <mat-icon>computer</mat-icon>
-                        Digital Banking
-                      </mat-option>
-                      <mat-option value="Operations">
-                        <mat-icon>settings</mat-icon>
-                        Operations
+                      <mat-option value="NCR">
+                        <mat-icon>gavel</mat-icon>
+                        NCR
                       </mat-option>
                     </mat-select>
                     <mat-icon matSuffix>business</mat-icon>
@@ -133,9 +123,6 @@
       <div class="wizard-step" *ngIf="currentStep === 2" [@slideIn]>
         <div class="step-container">
           <div class="step-header">
-            <div class="step-icon-container">
-              <mat-icon class="step-icon">payments</mat-icon>
-            </div>
             <div class="step-info">
               <h2 class="step-title">Cash Selection</h2>
               <p class="step-description">Choose your required denominations and quantities</p>
@@ -191,6 +178,17 @@
               <div class="denominations-grid">
                 <div *ngFor="let denom of denominations" class="denomination-card">
                   <div class="card-header">
+                    <div class="denomination-image-container">
+                      <img
+                        [src]="'assets/images/Money/' + denom.label + '.jpg'"
+                        [alt]="denom.label + ' South African Rand Note'"
+                        class="denomination-image"
+                        loading="lazy"
+                        onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                      <div class="image-fallback" style="display: none;">
+                        <mat-icon class="fallback-icon">payments</mat-icon>
+                      </div>
+                    </div>
                     <div class="denomination-info">
                       <div class="denomination-value">{{ denom.label }}</div>
                       <div class="denomination-currency">South African Rand</div>
@@ -219,37 +217,36 @@
                           (selectionChange)="onSeriesSelectChange(denom.value, $event.value)"
                           [name]="'series-' + denom.value">
 
+                          <!-- Custom trigger to show only clean series name when closed -->
+                          <mat-select-trigger>
+                            {{ selectedSeries[denom.value] ? getSeriesLabel(selectedSeries[denom.value]!) : 'Select Series' }}
+                          </mat-select-trigger>
+
+                          <!-- Options with full details when dropdown is open -->
                           <mat-option
                             *ngFor="let seriesOption of getSeriesOptions(denom.value); trackBy: trackBySeries"
                             [value]="seriesOption.series"
                             [class]="getSeriesStatusClass(seriesOption)">
 
-                            <div class="series-option-content">
-                              <div class="series-main-info">
-                                <span class="series-name">{{ getSeriesLabel(seriesOption.series) }}</span>
-                                <mat-chip
-                                  class="recommended-badge"
-                                  *ngIf="isSeriesRecommended(seriesOption)">
-                                  <mat-icon>star</mat-icon>
-                                  Recommended
-                                </mat-chip>
-                              </div>
-                              <div class="series-availability-info">
-                                <mat-icon
-                                  class="availability-status-icon"
-                                  [ngClass]="{
-                                    'status-available': seriesOption.status === InventoryStatus.AVAILABLE,
-                                    'status-low-stock': seriesOption.status === InventoryStatus.LOW_STOCK,
-                                    'status-out-of-stock': seriesOption.status === InventoryStatus.OUT_OF_STOCK
-                                  }">
-                                  {{ getSeriesStatusIcon(seriesOption) }}
-                                </mat-icon>
-                                <span class="availability-text">{{ seriesOption.available }} available</span>
+                            <div class="option-layout">
+                              <span class="series-name">{{ getSeriesLabel(seriesOption.series) }}</span>
+
+                              <div class="option-details">
+                                <span class="series-badges" *ngIf="isSeriesRecommended(seriesOption)">
+                                  <mat-icon class="recommended-icon">star</mat-icon>
+                                  <span class="recommended-text">Recommended</span>
+                                </span>
+
+                                <span class="series-availability">
+                                  <mat-icon class="status-icon" [ngClass]="getSeriesStatusClass(seriesOption)">
+                                    {{ getSeriesStatusIcon(seriesOption) }}
+                                  </mat-icon>
+                                  <span class="availability-count">{{ seriesOption.available }} available</span>
+                                </span>
                               </div>
                             </div>
                           </mat-option>
                         </mat-select>
-                        <mat-icon matSuffix>arrow_drop_down</mat-icon>
                       </mat-form-field>
                     </div>
 
@@ -288,19 +285,33 @@
                 <!-- Coins Option -->
                 <div class="option-card coins-card">
                   <div class="option-header">
-                    <mat-icon class="option-icon">monetization_on</mat-icon>
-                    <h4>Coins Request</h4>
+                    <div class="option-image-container">
+                      <img
+                        src="assets/images/Money/Coin.png"
+                        alt="South African Coins"
+                        class="option-image"
+                        loading="lazy"
+                        onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                      <div class="image-fallback" style="display: none;">
+                        <div class="rand-symbol">R</div>
+                      </div>
+                    </div>
+                    <div class="option-info">
+                      <h4>Coins Request</h4>
+                      <p>Include South African Rand coins</p>
+                    </div>
+                    <div class="option-toggle-container">
+                      <mat-slide-toggle
+                        [(ngModel)]="coinsRequested"
+                        name="coinsRequested"
+                        (change)="onCoinsToggleChange($event.checked)"
+                        color="primary"
+                        class="option-toggle" style="color: White;">
+                        Request Coins
+                      </mat-slide-toggle>
+                    </div>
                   </div>
                   <div class="option-content">
-                    <p>Include coins with your cash request</p>
-                    <mat-slide-toggle
-                      [(ngModel)]="coinsRequested"
-                      name="coinsRequested"
-                      (change)="onCoinsToggleChange($event.checked)"
-                      color="primary"
-                      class="option-toggle">
-                      Request Coins
-                    </mat-slide-toggle>
                     <div class="option-confirmation" *ngIf="coinsRequested">
                       <mat-icon class="confirm-icon">check_circle</mat-icon>
                       <span>Coins will be included</span>
@@ -311,22 +322,36 @@
                 <!-- Dye Pack Option -->
                 <div class="option-card dye-pack-card">
                   <div class="option-header">
-                    <mat-icon class="option-icon">security</mat-icon>
-                    <h4>Security Dye Pack</h4>
+                    <div class="option-image-container">
+                      <img
+                        src="assets/images/Money/Dye Stained.jpg"
+                        alt="Security Dye Pack"
+                        class="option-image"
+                        loading="lazy"
+                        onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                      <div class="image-fallback" style="display: none;">
+                        <mat-icon class="fallback-icon security-icon">security</mat-icon>
+                      </div>
+                    </div>
+                    <div class="option-info">
+                      <h4>Security Dye Pack</h4>
+                      <p>Enhanced security protection for cash transport</p>
+                    </div>
+                    <div class="option-toggle-container">
+                      <mat-slide-toggle
+                        [(ngModel)]="dyePackRequired"
+                        name="dyePackRequired"
+                        (change)="onDyePackToggleChange($event.checked)"
+                        color="primary"
+                        class="option-toggle">
+                        Require Dye Pack
+                      </mat-slide-toggle>
+                    </div>
                   </div>
                   <div class="option-content">
-                    <p>Add security dye pack for protection</p>
-                    <mat-slide-toggle
-                      [(ngModel)]="dyePackRequired"
-                      name="dyePackRequired"
-                      (change)="onDyePackToggleChange($event.checked)"
-                      color="primary"
-                      class="option-toggle">
-                      Require Dye Pack
-                    </mat-slide-toggle>
                     <div class="option-confirmation" *ngIf="dyePackRequired">
                       <mat-icon class="confirm-icon">check_circle</mat-icon>
-                      <span>Dye pack will be included</span>
+                      <span>Security dye pack will be included</span>
                     </div>
                   </div>
                 </div>
@@ -342,11 +367,13 @@
                 </div>
                 <div class="total-extras" *ngIf="coinsRequested || dyePackRequired">
                   <div class="extra-item" *ngIf="coinsRequested">
-                    <mat-icon>monetization_on</mat-icon>
+                    <div class="extra-icon-container">
+                      <span class="rand-symbol-small">R</span>
+                    </div>
                     <span>+ Coins</span>
                   </div>
                   <div class="extra-item" *ngIf="dyePackRequired">
-                    <mat-icon>security</mat-icon>
+                    <mat-icon class="security-icon">security</mat-icon>
                     <span>+ Dye Pack</span>
                   </div>
                 </div>
@@ -360,9 +387,6 @@
       <div class="wizard-step" *ngIf="currentStep === 3" [@slideIn]>
         <div class="step-container">
           <div class="step-header">
-            <div class="step-icon-container">
-              <mat-icon class="step-icon">preview</mat-icon>
-            </div>
             <div class="step-info">
               <h2 class="step-title">Review & Submit</h2>
               <p class="step-description">Verify your request details before submission</p>
@@ -370,36 +394,65 @@
           </div>
 
           <div class="step-content">
+            <!-- Requester Summary -->
+            <div class="requester-summary">
+              <h3 class="section-title">
+                <mat-icon>person</mat-icon>
+                Requester Information
+              </h3>
+
+              <div class="summary-card">
+                <div class="summary-row">
+                  <span class="label">Name:</span>
+                  <span class="value">{{ currentUser?.fullName }}</span>
+                </div>
+                <div class="summary-row">
+                  <span class="label">Department:</span>
+                  <span class="value">{{ selectedDepartment }}</span>
+                </div>
+                <div class="summary-row">
+                  <span class="label">Request Date:</span>
+                  <span class="value">{{ dateRequested | date:'medium' }}</span>
+                </div>
+              </div>
+            </div>
+
             <!-- Request Details -->
             <div class="details-container">
               <h3 class="section-title">
                 <mat-icon>description</mat-icon>
-                Request Details
+                Additional Details
               </h3>
 
-              <div class="details-grid">
-                <div class="detail-card">
-                  <mat-form-field appearance="fill" class="modern-field">
-                    <mat-label>Date and Time Requested</mat-label>
-                    <input matInput [matDatepicker]="picker" [(ngModel)]="dateRequested" name="dateRequested" required>
-                    <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
-                    <mat-datepicker #picker></mat-datepicker>
-                    <mat-icon matPrefix>event</mat-icon>
-                  </mat-form-field>
-                </div>
+              <div class="details-card">
+                <div class="details-content">
+                  <div class="detail-field">
+                    <div class="field-header">
+                      <mat-icon class="field-icon">event</mat-icon>
+                      <span class="field-label">Date and Time Requested</span>
+                    </div>
+                    <mat-form-field appearance="outline" class="compact-field">
+                      <input matInput [matDatepicker]="picker" [(ngModel)]="dateRequested" name="dateRequested" required>
+                      <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+                      <mat-datepicker #picker></mat-datepicker>
+                    </mat-form-field>
+                  </div>
 
-                <div class="detail-card">
-                  <mat-form-field appearance="fill" class="modern-field">
-                    <mat-label>Comments (Optional)</mat-label>
-                    <textarea
-                      matInput
-                      [(ngModel)]="comments"
-                      name="comments"
-                      rows="3"
-                      placeholder="Any additional information or special requirements...">
-                    </textarea>
-                    <mat-icon matPrefix>comment</mat-icon>
-                  </mat-form-field>
+                  <div class="detail-field">
+                    <div class="field-header">
+                      <mat-icon class="field-icon">comment</mat-icon>
+                      <span class="field-label">Comments <span class="optional-text">(Optional)</span></span>
+                    </div>
+                    <mat-form-field appearance="outline" class="compact-field">
+                      <textarea
+                        matInput
+                        [(ngModel)]="comments"
+                        name="comments"
+                        rows="2"
+                        placeholder="Any additional information or special requirements...">
+                      </textarea>
+                    </mat-form-field>
+                  </div>
                 </div>
               </div>
             </div>
@@ -412,43 +465,67 @@
               </h3>
 
               <div class="summary-container">
-                <div class="summary-items">
-                  <div class="summary-item" *ngFor="let note of getSelectedNotes()">
-                    <div class="item-info">
-                      <mat-icon class="item-icon">payments</mat-icon>
-                      <span class="item-description">{{ note.quantity }}x {{ note.denomination | currency:'ZAR':'symbol':'1.0-0' }} Notes</span>
-                    </div>
-                    <span class="item-amount">{{ formatCurrency(note.denomination * note.quantity) }}</span>
+                <!-- Items Section -->
+                <div class="summary-section">
+                  <div class="section-header">
+                    <mat-icon class="section-icon">inventory_2</mat-icon>
+                    <span class="section-label">Selected Items</span>
                   </div>
 
-                  <div class="summary-item" *ngIf="coinsRequested">
-                    <div class="item-info">
-                      <mat-icon class="item-icon coins-icon">monetization_on</mat-icon>
-                      <span class="item-description">Coins</span>
+                  <div class="items-list">
+                    <div class="summary-item" *ngFor="let note of getSelectedNotes()">
+                      <div class="item-content">
+                        <div class="item-icon-wrapper">
+                          <mat-icon class="item-icon banknote-icon">payments</mat-icon>
+                        </div>
+                        <div class="item-details">
+                          <span class="item-name">{{ note.denomination | currency:'ZAR':'symbol':'1.0-0' }} Bank Notes</span>
+                          <span class="item-quantity">Quantity: {{ note.quantity }}</span>
+                        </div>
+                        <div class="item-amount">{{ formatCurrency(note.denomination * note.quantity) }}</div>
+                      </div>
                     </div>
-                    <mat-icon class="item-status">check_circle</mat-icon>
-                  </div>
 
-                  <div class="summary-item" *ngIf="dyePackRequired">
-                    <div class="item-info">
-                      <mat-icon class="item-icon security-icon">security</mat-icon>
-                      <span class="item-description">Security Dye Pack</span>
+                    <div class="summary-item" *ngIf="coinsRequested">
+                      <div class="item-content">
+                        <div class="item-icon-wrapper coins-wrapper">
+                          <span class="rand-symbol">R</span>
+                        </div>
+                        <div class="item-details">
+                          <span class="item-name">South African Rand Coins</span>
+                          <span class="item-quantity">As requested</span>
+                        </div>
+                        <div class="item-status">
+                          <mat-icon class="status-icon">check_circle</mat-icon>
+                        </div>
+                      </div>
                     </div>
-                    <mat-icon class="item-status">check_circle</mat-icon>
+
+                    <div class="summary-item" *ngIf="dyePackRequired">
+                      <div class="item-content">
+                        <div class="item-icon-wrapper security-wrapper">
+                          <mat-icon class="item-icon security-icon">security</mat-icon>
+                        </div>
+                        <div class="item-details">
+                          <span class="item-name">Security Dye Pack</span>
+                          <span class="item-quantity">Enhanced protection</span>
+                        </div>
+                        <div class="item-status">
+                          <mat-icon class="status-icon">check_circle</mat-icon>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <div class="summary-total">
-                  <div class="total-line">
-                    <span class="total-label">Total Cash Amount</span>
-                    <span class="total-amount">{{ formatCurrency(calculateTotal()) }}</span>
-                  </div>
-                  <div class="total-extras" *ngIf="coinsRequested || dyePackRequired">
-                    <span class="extras-label">Additional Items:</span>
-                    <div class="extras-list">
-                      <span *ngIf="coinsRequested" class="extra-item">Coins</span>
-                      <span *ngIf="dyePackRequired" class="extra-item">Dye Pack</span>
+                <!-- Total Section -->
+                <div class="total-section" *ngIf="calculateTotal() > 0">
+                  <div class="total-content">
+                    <div class="total-info">
+                      <mat-icon class="total-icon">account_balance_wallet</mat-icon>
+                      <span class="total-label">Total Cash Amount</span>
                     </div>
+                    <div class="total-amount">{{ formatCurrency(calculateTotal()) }}</div>
                   </div>
                 </div>
               </div>
@@ -457,52 +534,65 @@
         </div>
       </div>
 
-      <!-- Navigation Buttons -->
-      <div class="wizard-navigation">
-        <div class="nav-container">
-          <div class="nav-left">
-            <button mat-button (click)="previousStep()" *ngIf="currentStep > 1" class="nav-btn prev-btn">
-              <mat-icon>arrow_back</mat-icon>
-              Previous
-            </button>
-          </div>
+    </form>
+  </div>
 
-          <div class="nav-center">
-            <span class="step-indicator">Step {{ currentStep }} of 3</span>
-          </div>
+  <!-- Footer Navigation -->
+  <footer class="wizard-footer">
+    <div class="footer-content">
+      <div class="footer-left">
+        <button
+          mat-button
+          (click)="previousStep()"
+          *ngIf="currentStep > 1"
+          class="footer-btn prev-btn">
+          <mat-icon>arrow_back</mat-icon>
+          Previous
+        </button>
+      </div>
 
-          <div class="nav-right">
-            <button mat-button (click)="onCancel()" class="nav-btn cancel-btn">
-              <mat-icon>close</mat-icon>
-              Cancel
-            </button>
-
-            <button
-              mat-raised-button
-              color="primary"
-              (click)="nextStep()"
-              *ngIf="currentStep < 3"
-              [disabled]="!isStepValid(currentStep)"
-              class="nav-btn next-btn">
-              Next
-              <mat-icon>arrow_forward</mat-icon>
-            </button>
-
-            <button
-              mat-raised-button
-              color="primary"
-              type="submit"
-              *ngIf="currentStep === 3"
-              [disabled]="!isFormValid()"
-              class="nav-btn submit-btn">
-              <mat-icon>send</mat-icon>
-              Submit Request
-            </button>
+      <div class="footer-center">
+        <div class="step-progress">
+          <span class="step-indicator">Step {{ currentStep }} of 3</span>
+          <div class="progress-bar">
+            <div class="progress-fill" [style.width.%]="(currentStep / 3) * 100"></div>
           </div>
         </div>
       </div>
-    </form>
-  </div>
+
+      <div class="footer-right">
+        <button
+          mat-button
+          (click)="onCancel()"
+          class="footer-btn cancel-btn">
+          <mat-icon>close</mat-icon>
+          Cancel
+        </button>
+
+        <button
+          mat-raised-button
+          color="primary"
+          (click)="nextStep()"
+          *ngIf="currentStep < 3"
+          [disabled]="!isStepValid(currentStep)"
+          class="footer-btn next-btn">
+          Next
+          <mat-icon>arrow_forward</mat-icon>
+        </button>
+
+        <button
+          mat-raised-button
+          color="primary"
+          (click)="onSubmit()"
+          *ngIf="currentStep === 3"
+          [disabled]="!isFormValid()"
+          class="footer-btn submit-btn">
+          <mat-icon>send</mat-icon>
+          Submit Request
+        </button>
+      </div>
+    </div>
+  </footer>
 </div>
 
 <!-- User Menu -->

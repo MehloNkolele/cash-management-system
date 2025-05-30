@@ -126,7 +126,8 @@ export class CashRequestFormComponent implements OnInit {
     }
 
     this.departments = this.userService.getDepartments();
-    this.selectedDepartment = this.currentUser.department;
+    // Don't auto-populate department - require explicit selection
+    this.selectedDepartment = '';
 
     // Initialize bank notes with zero quantities
     this.initializeBankNotes();
@@ -206,11 +207,17 @@ export class CashRequestFormComponent implements OnInit {
 
   isFormValid(): boolean {
     return this.selectedDepartment !== '' &&
-           (this.getSelectedNotes().length > 0 || this.coinsRequested) &&
-           (this.calculateTotal() > 0 || this.coinsRequested);
+           (this.getSelectedNotes().length > 0 || this.coinsRequested);
   }
 
   onSubmit(): void {
+    console.log('Submit button clicked!');
+    console.log('Form valid:', this.isFormValid());
+    console.log('Selected department:', this.selectedDepartment);
+    console.log('Selected notes:', this.getSelectedNotes());
+    console.log('Coins requested:', this.coinsRequested);
+    console.log('Dye pack required:', this.dyePackRequired);
+
     if (!this.isFormValid()) {
       this.snackBar.open('Please fill in all required fields and select at least one denomination or coins.', 'Close', {
         duration: 3000
@@ -227,8 +234,11 @@ export class CashRequestFormComponent implements OnInit {
       comments: this.comments || undefined
     };
 
+    console.log('Request data:', requestData);
+
     try {
       const newRequest = this.cashRequestService.createRequest(requestData);
+      console.log('Request created successfully:', newRequest);
 
       this.snackBar.open('Cash request submitted successfully!', 'Close', {
         duration: 3000
@@ -236,6 +246,7 @@ export class CashRequestFormComponent implements OnInit {
 
       this.router.navigate(['/dashboard']);
     } catch (error) {
+      console.error('Error submitting request:', error);
       this.snackBar.open('Error submitting request. Please try again.', 'Close', {
         duration: 3000
       });
@@ -405,6 +416,35 @@ export class CashRequestFormComponent implements OnInit {
   nextStep(): void {
     if (this.currentStep < this.totalSteps && this.isStepValid(this.currentStep)) {
       this.currentStep++;
+    } else {
+      // Show validation error message
+      this.showStepValidationError(this.currentStep);
+    }
+  }
+
+  private showStepValidationError(step: number): void {
+    let errorMessage = '';
+
+    switch (step) {
+      case 1:
+        if (this.selectedDepartment === '') {
+          errorMessage = 'Please select your department before proceeding.';
+        }
+        break;
+      case 2:
+        if (this.getSelectedNotes().length === 0 && !this.coinsRequested) {
+          errorMessage = 'Please select at least one denomination or request coins before proceeding.';
+        }
+        break;
+      default:
+        errorMessage = 'Please complete all required fields before proceeding.';
+    }
+
+    if (errorMessage) {
+      this.snackBar.open(errorMessage, 'Close', {
+        duration: 4000,
+        panelClass: ['error-snackbar']
+      });
     }
   }
 
