@@ -31,6 +31,7 @@ import { CashRequestService } from '../../services/cash-request.service';
 import { InventoryService } from '../../services/inventory.service';
 import { SystemLogService } from '../../services/system-log.service';
 import { NotificationService } from '../../services/notification.service';
+import { OverdueMonitoringService } from '../../services/overdue-monitoring.service';
 
 // Components
 import { NotificationPanelComponent } from '../notification-panel/notification-panel.component';
@@ -38,6 +39,7 @@ import { AddCashModalComponent } from '../add-cash-modal/add-cash-modal.componen
 import { ProcessReturnsModalComponent } from '../process-returns-modal/process-returns-modal.component';
 import { SystemLogsModalComponent } from '../system-logs-modal/system-logs-modal.component';
 import { LogDetailsModalComponent } from '../log-details-modal/log-details-modal.component';
+import { OverdueAlertComponent } from '../overdue-alert/overdue-alert.component';
 
 @Component({
   selector: 'app-manager-dashboard',
@@ -57,7 +59,8 @@ import { LogDetailsModalComponent } from '../log-details-modal/log-details-modal
     MatProgressBarModule,
     MatSnackBarModule,
     MatDialogModule,
-    NotificationPanelComponent
+    NotificationPanelComponent,
+    OverdueAlertComponent
   ],
   templateUrl: './manager-dashboard.component.html',
   styleUrls: ['./manager-dashboard.component.scss']
@@ -94,6 +97,7 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
     private inventoryService: InventoryService,
     private systemLogService: SystemLogService,
     private notificationService: NotificationService,
+    private overdueMonitoringService: OverdueMonitoringService,
     private router: Router,
     private snackBar: MatSnackBar,
     private dialog: MatDialog
@@ -101,7 +105,7 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.currentUser = this.userService.getCurrentUser();
-    
+
     // Check if user has manager privileges
     if (!this.currentUser || !this.userService.hasManagerPrivileges()) {
       this.router.navigate(['/login']);
@@ -182,10 +186,10 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
       if (!request.expectedReturnDate || request.status === RequestStatus.COMPLETED) {
         return false;
       }
-      
+
       const deadline = new Date(request.expectedReturnDate);
       deadline.setHours(15, 0, 0, 0); // 3 PM deadline
-      
+
       return now > deadline && request.status !== RequestStatus.RETURNED;
     });
   }
@@ -239,9 +243,9 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
       startDate.setDate(startDate.getDate() - 30); // Last 30 days
 
       const report = this.systemLogService.generateAuditReport(startDate, endDate);
-      
+
       this.snackBar.open('Audit report generated successfully', 'Close', { duration: 3000 });
-      
+
       // TODO: Open audit report viewer or download
       console.log('Generated audit report:', report);
     } catch (error) {
@@ -391,7 +395,7 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
   // Notification Methods
   onNotificationClick(notification: Notification): void {
     this.notificationService.markAsRead(notification.id);
-    
+
     if (notification.requestId) {
       this.router.navigate(['/request-details', notification.requestId]);
     }
@@ -474,10 +478,26 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
   }
 
   formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('en-ZA', {
-      style: 'currency',
-      currency: 'ZAR'
-    }).format(amount);
+    // For large amounts, use compact notation for better display
+    if (amount >= 1000000) {
+      return new Intl.NumberFormat('en-ZA', {
+        style: 'currency',
+        currency: 'ZAR',
+        notation: 'compact',
+        maximumFractionDigits: 1
+      }).format(amount);
+    } else if (amount >= 10000) {
+      return new Intl.NumberFormat('en-ZA', {
+        style: 'currency',
+        currency: 'ZAR',
+        maximumFractionDigits: 0
+      }).format(amount);
+    } else {
+      return new Intl.NumberFormat('en-ZA', {
+        style: 'currency',
+        currency: 'ZAR'
+      }).format(amount);
+    }
   }
 
   formatDateTime(date: Date): string {

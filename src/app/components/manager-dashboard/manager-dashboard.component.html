@@ -35,6 +35,9 @@
 
   <!-- Dashboard Content -->
   <div class="dashboard-content">
+    <!-- Overdue Alert Component -->
+    <app-overdue-alert [showFloatingIndicator]="false" [autoExpand]="true"></app-overdue-alert>
+
     <!-- Modern Welcome Header -->
     <div class="welcome-header">
       <div class="welcome-content">
@@ -149,17 +152,17 @@
               <mat-icon>add_circle</mat-icon>
               Add Cash Inventory
             </button>
-            
+
             <button mat-raised-button color="accent" (click)="onProcessReturns()" class="action-button">
               <mat-icon>assignment_return</mat-icon>
               Process Returns
             </button>
-            
+
             <button mat-raised-button (click)="onGenerateAuditReport()" class="action-button">
               <mat-icon>assessment</mat-icon>
               Generate Audit Report
             </button>
-            
+
             <button mat-raised-button (click)="onViewLogs()" class="action-button">
               <mat-icon>list_alt</mat-icon>
               View System Logs

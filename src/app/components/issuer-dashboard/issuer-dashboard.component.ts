@@ -22,6 +22,10 @@ import { CashRequestService } from '../../services/cash-request.service';
 import { InventoryService } from '../../services/inventory.service';
 import { NotificationService } from '../../services/notification.service';
 import { SystemLogService } from '../../services/system-log.service';
+import { OverdueMonitoringService } from '../../services/overdue-monitoring.service';
+
+// Components
+import { OverdueAlertComponent } from '../overdue-alert/overdue-alert.component';
 
 @Component({
   selector: 'app-issuer-dashboard',
@@ -38,7 +42,8 @@ import { SystemLogService } from '../../services/system-log.service';
     MatBadgeModule,
     MatTabsModule,
     MatDividerModule,
-    NotificationPanelComponent
+    NotificationPanelComponent,
+    OverdueAlertComponent
   ],
   templateUrl: './issuer-dashboard.component.html',
   styleUrl: './issuer-dashboard.component.scss'
@@ -67,6 +72,7 @@ export class IssuerDashboardComponent implements OnInit {
     private inventoryService: InventoryService,
     private notificationService: NotificationService,
     private systemLogService: SystemLogService,
+    private overdueMonitoringService: OverdueMonitoringService,
     private router: Router
   ) {}
 
@@ -167,7 +173,26 @@ export class IssuerDashboardComponent implements OnInit {
   }
 
   formatCurrency(amount: number): string {
-    return `R${amount.toLocaleString()}`;
+    // For large amounts, use compact notation for better display
+    if (amount >= 1000000) {
+      return new Intl.NumberFormat('en-ZA', {
+        style: 'currency',
+        currency: 'ZAR',
+        notation: 'compact',
+        maximumFractionDigits: 1
+      }).format(amount);
+    } else if (amount >= 10000) {
+      return new Intl.NumberFormat('en-ZA', {
+        style: 'currency',
+        currency: 'ZAR',
+        maximumFractionDigits: 0
+      }).format(amount);
+    } else {
+      return new Intl.NumberFormat('en-ZA', {
+        style: 'currency',
+        currency: 'ZAR'
+      }).format(amount);
+    }
   }
 
   getPendingRequestsCount(): number {

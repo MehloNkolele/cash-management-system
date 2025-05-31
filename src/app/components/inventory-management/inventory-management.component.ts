@@ -61,12 +61,12 @@ export class InventoryManagementComponent implements OnInit, OnDestroy {
     [NoteSeries.V6]: []
   };
   inventorySummary: InventorySummary | null = null;
-  
+
   // Constants for templates
   NOTE_SERIES_LABELS = NOTE_SERIES_LABELS;
   DENOMINATION_LABELS = DENOMINATION_LABELS;
   NoteSeries = NoteSeries;
-  
+
   // Table columns
   displayedColumns: string[] = ['denomination', 'quantity', 'value', 'status', 'actions'];
 
@@ -80,7 +80,7 @@ export class InventoryManagementComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.currentUser = this.userService.getCurrentUser();
-    
+
     if (!this.currentUser || !this.hasInventoryAccess()) {
       this.router.navigate(['/login']);
       return;
@@ -126,9 +126,9 @@ export class InventoryManagementComponent implements OnInit, OnDestroy {
 
   getStockStatus(item: CashInventory): { status: string; class: string } {
     if (!this.inventorySummary) return { status: 'Unknown', class: 'status-unknown' };
-    
+
     const alert = this.inventorySummary.lowStockAlerts.find(a => a.inventoryId === item.id);
-    
+
     if (!alert) {
       return { status: 'In Stock', class: 'status-in-stock' };
     }
@@ -201,6 +201,16 @@ export class InventoryManagementComponent implements OnInit, OnDestroy {
   }
 
   goBack(): void {
+    if (this.userService.hasManagerPrivileges()) {
+      this.router.navigate(['/manager-dashboard']);
+    } else if (this.currentUser?.role === 'issuer') {
+      this.router.navigate(['/issuer-dashboard']);
+    } else {
+      this.router.navigate(['/dashboard']);
+    }
+  }
+
+  navigateToDashboard(): void {
     if (this.userService.hasManagerPrivileges()) {
       this.router.navigate(['/manager-dashboard']);
     } else if (this.currentUser?.role === 'issuer') {

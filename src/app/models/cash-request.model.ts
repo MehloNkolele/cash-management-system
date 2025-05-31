@@ -19,6 +19,16 @@ export interface CashRequest {
   createdAt: Date;
   updatedAt: Date;
 
+  // Approval details
+  approvedBy?: string;
+  dateApproved?: Date;
+
+  // Cancellation details
+  dateCancelled?: Date;
+  cancellationReason?: string;
+  cancelledBy?: string;
+  isAutoCancelled?: boolean;
+
   // Rejection details
   rejectionReason?: string;
   rejectedBy?: string;

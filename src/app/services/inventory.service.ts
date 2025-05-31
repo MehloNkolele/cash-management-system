@@ -272,7 +272,7 @@ export class InventoryService {
       denominations: items.map(item => this.createDenominationBreakdown(item, settings))
     }));
 
-    const denominationBreakdown: DenominationBreakdown[] = inventory.map(item => 
+    const denominationBreakdown: DenominationBreakdown[] = inventory.map(item =>
       this.createDenominationBreakdown(item, settings)
     );
 
@@ -711,5 +711,64 @@ export class InventoryService {
     );
 
     return item ? item.quantity : 0;
+  }
+
+  // Return reserved cash back to inventory (for auto-cancellation)
+  returnReservedCash(bankNotes: BankNote[], requestId: string, returnedBy: string = 'SYSTEM'): boolean {
+    try {
+      const inventory = this.getAllInventory();
+      const transactions: InventoryTransaction[] = [];
+
+      // Add each bank note back to inventory (prioritize Mandela series for returns)
+      bankNotes.forEach(note => {
+        // Find the best series to return to (prefer Mandela series)
+        const targetItem = inventory.find(item =>
+          item.denomination === note.denomination &&
+          item.noteSeries === NoteSeries.MANDELA
+        ) || inventory.find(item =>
+          item.denomination === note.denomination
+        );
+
+        if (targetItem) {
+          const previousQuantity = targetItem.quantity;
+          targetItem.quantity += note.quantity;
+          targetItem.value = targetItem.quantity * targetItem.denomination;
+          targetItem.lastUpdated = new Date();
+          targetItem.updatedBy = returnedBy;
+
+          // Create transaction record
+          transactions.push({
+            id: this.generateTransactionId(),
+            type: TransactionType.ADD,
+            inventoryId: targetItem.id,
+            quantityChange: note.quantity,
+            previousQuantity,
+            newQuantity: targetItem.quantity,
+            reason: `Auto-cancellation return - Request ID: ${requestId}`,
+            performedBy: returnedBy,
+            timestamp: new Date()
+          });
+        }
+      });
+
+      // Save updated inventory and transactions
+      this.saveInventory(inventory);
+      transactions.forEach(transaction => this.saveTransaction(transaction));
+
+      // Log the inventory return
+      this.systemLogService.createLog({
+        type: 'inventory_change' as any,
+        category: 'cash_request' as any,
+        severity: 'info' as any,
+        title: 'Inventory Returned - Auto-Cancellation',
+        message: `Reserved cash returned to inventory for auto-cancelled request ${requestId}`,
+        metadata: { requestId, bankNotes, returnedBy, autoCancellation: true }
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Error returning reserved cash to inventory:', error);
+      return false;
+    }
   }
 }

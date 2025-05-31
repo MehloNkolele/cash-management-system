@@ -482,6 +482,70 @@ export class NotificationService {
     }
   }
 
+  notifyUpcomingOverdue(request: CashRequest, minutesUntilOverdue: number): void {
+    if (!request.expectedReturnDate) return;
+
+    const deadlineMessage = this.timeUtilityService.formatReturnDeadline(request.expectedReturnDate);
+    const urgencyLevel = minutesUntilOverdue <= 5 ? 'URGENT' : 'WARNING';
+
+    // Notify requester
+    this.createNotification({
+      type: NotificationType.RETURN_REMINDER,
+      title: `${urgencyLevel}: Cash Return Due in ${minutesUntilOverdue} minutes!`,
+      message: `Your cash must be returned by ${deadlineMessage}. Only ${minutesUntilOverdue} minutes remaining!`,
+      recipientId: request.requesterId,
+      requestId: request.id
+    });
+
+    // Notify issuer and managers
+    const issuers = this.userService.getIssuers();
+    const managers = this.userService.getManagers();
+    const recipients = [...issuers, ...managers];
+
+    recipients.forEach(recipient => {
+      this.createNotification({
+        type: NotificationType.RETURN_REMINDER,
+        title: `${urgencyLevel}: Cash Return Due in ${minutesUntilOverdue} minutes!`,
+        message: `Cash issued to ${request.requesterName} must be returned by ${deadlineMessage}. Only ${minutesUntilOverdue} minutes remaining!`,
+        recipientId: recipient.id,
+        requestId: request.id
+      });
+    });
+  }
+
+  notifyAutoCancellation(request: CashRequest, cancellationInfo: any): void {
+    const totalAmount = request.bankNotes.reduce((sum, note) => sum + (note.denomination * note.quantity), 0);
+    const approvalTime = new Date(request.dateApproved || '').toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+
+    // Notify requester
+    this.createNotification({
+      type: NotificationType.REQUEST_CANCELLED,
+      title: 'Cash Request Auto-Cancelled',
+      message: `Your cash request (R${totalAmount.toLocaleString()}) approved at ${approvalTime} was automatically cancelled as it was not collected by the 3:00 PM deadline. Please submit a new request if you still need the cash.`,
+      recipientId: request.requesterId,
+      requestId: request.id
+    });
+
+    // Notify issuer and managers
+    const issuers = this.userService.getIssuers();
+    const managers = this.userService.getManagers();
+    const recipients = [...issuers, ...managers];
+
+    recipients.forEach(recipient => {
+      this.createNotification({
+        type: NotificationType.REQUEST_CANCELLED,
+        title: 'Cash Request Auto-Cancelled - Uncollected',
+        message: `Cash request by ${request.requesterName} (${request.department}) for R${totalAmount.toLocaleString()} was auto-cancelled. Approved at ${approvalTime} but not collected by 3:00 PM deadline. Reserved inventory has been returned.`,
+        recipientId: recipient.id,
+        requestId: request.id
+      });
+    });
+  }
+
   private checkScheduledNotifications(): void {
     // Check for scheduled notifications every minute
     setInterval(() => {

@@ -60,7 +60,7 @@ export class SystemLogService {
 
   createLog(logData: Partial<SystemLog>): SystemLog {
     const currentUser = this.userService.getCurrentUser();
-    
+
     const newLog: SystemLog = {
       id: this.generateLogId(),
       type: logData.type || LogType.SYSTEM_EVENT,
@@ -88,7 +88,7 @@ export class SystemLogService {
       category: LogCategory.AUTHENTICATION,
       severity: success ? LogSeverity.INFO : LogSeverity.WARNING,
       title: success ? 'User Login' : 'Failed Login Attempt',
-      message: success 
+      message: success
         ? `User ${userName} logged in successfully`
         : `Failed login attempt for user ${userName}`,
       userId,
@@ -148,6 +148,85 @@ export class SystemLogService {
     });
   }
 
+  logOverdueCash(request: CashRequest): void {
+    const currentTime = new Date();
+    const deadline = new Date(request.expectedReturnDate || request.dateRequested);
+    deadline.setHours(15, 0, 0, 0); // 3 PM deadline
+
+    const hoursOverdue = Math.floor((currentTime.getTime() - deadline.getTime()) / (1000 * 60 * 60));
+    const minutesOverdue = Math.floor(((currentTime.getTime() - deadline.getTime()) % (1000 * 60 * 60)) / (1000 * 60));
+
+    this.createLog({
+      type: LogType.DEADLINE_VIOLATION,
+      category: LogCategory.DEADLINE_MONITORING,
+      severity: hoursOverdue > 24 ? LogSeverity.CRITICAL : LogSeverity.ERROR,
+      title: 'Overdue Cash Detected',
+      message: `Cash request ${request.id} is overdue by ${hoursOverdue}h ${minutesOverdue}m. Requester: ${request.requesterName}`,
+      requestId: request.id,
+      metadata: {
+        requesterId: request.requesterId,
+        requesterName: request.requesterName,
+        department: request.department,
+        expectedReturnDate: request.expectedReturnDate,
+        hoursOverdue,
+        minutesOverdue,
+        totalAmount: request.bankNotes.reduce((sum, note) => sum + (note.denomination * note.quantity), 0),
+        issuedBy: request.issuedBy
+      }
+    });
+  }
+
+  logOverdueWarning(request: CashRequest, minutesUntilOverdue: number): void {
+    this.createLog({
+      type: LogType.SYSTEM_EVENT,
+      category: LogCategory.DEADLINE_MONITORING,
+      severity: minutesUntilOverdue <= 5 ? LogSeverity.WARNING : LogSeverity.INFO,
+      title: `Overdue Warning - ${minutesUntilOverdue} minutes remaining`,
+      message: `Cash request ${request.id} will be overdue in ${minutesUntilOverdue} minutes. Requester: ${request.requesterName}`,
+      requestId: request.id,
+      metadata: {
+        requesterId: request.requesterId,
+        requesterName: request.requesterName,
+        department: request.department,
+        expectedReturnDate: request.expectedReturnDate,
+        minutesUntilOverdue,
+        totalAmount: request.bankNotes.reduce((sum, note) => sum + (note.denomination * note.quantity), 0),
+        issuedBy: request.issuedBy
+      }
+    });
+  }
+
+  logAutoCancellation(request: CashRequest, cancellationInfo: any): void {
+    const totalAmount = request.bankNotes.reduce((sum, note) => sum + (note.denomination * note.quantity), 0);
+    const approvalDate = new Date(request.dateApproved || '');
+    const cancellationDate = new Date();
+    const hoursUncollected = Math.floor((cancellationDate.getTime() - approvalDate.getTime()) / (1000 * 60 * 60));
+
+    this.createLog({
+      type: LogType.SYSTEM_EVENT,
+      category: LogCategory.CASH_REQUEST,
+      severity: LogSeverity.WARNING,
+      title: 'Auto-Cancellation: Uncollected Approved Cash',
+      message: `Cash request ${request.id} auto-cancelled after ${hoursUncollected}h uncollected. Requester: ${request.requesterName}, Amount: R${totalAmount.toLocaleString()}`,
+      requestId: request.id,
+      metadata: {
+        requesterId: request.requesterId,
+        requesterName: request.requesterName,
+        department: request.department,
+        totalAmount,
+        approvalDate: request.dateApproved,
+        cancellationDate: request.dateCancelled,
+        cancellationReason: request.cancellationReason,
+        hoursUncollected,
+        cancellationDeadline: cancellationInfo.cancellationDeadline,
+        bankNotes: request.bankNotes,
+        approvedBy: request.approvedBy,
+        autoCancellation: true,
+        isAutoCancelled: request.isAutoCancelled
+      }
+    });
+  }
+
   logCashDiscrepancy(request: CashRequest, discrepancyDetails: string): void {
     this.createLog({
       type: LogType.DISCREPANCY,
@@ -182,7 +261,7 @@ export class SystemLogService {
 
   logManagerAction(action: string, details: string): void {
     const currentUser = this.userService.getCurrentUser();
-    
+
     this.createLog({
       type: LogType.USER_ACTION,
       category: LogCategory.AUDIT_TRAIL,
@@ -229,7 +308,7 @@ export class SystemLogService {
 
     if (filter.searchTerm) {
       const searchTerm = filter.searchTerm.toLowerCase();
-      logs = logs.filter(log => 
+      logs = logs.filter(log =>
         log.title.toLowerCase().includes(searchTerm) ||
         log.message.toLowerCase().includes(searchTerm) ||
         log.userName?.toLowerCase().includes(searchTerm)
@@ -313,7 +392,7 @@ export class SystemLogService {
     // Calculate audit statistics
     const requestLogs = logs.filter(log => log.category === LogCategory.CASH_REQUEST);
     const totalRequests = new Set(requestLogs.map(log => log.requestId)).size;
-    const completedRequests = requestLogs.filter(log => 
+    const completedRequests = requestLogs.filter(log =>
       log.message.includes('completed') || log.message.includes('returned')
     ).length;
     const lateReturns = logs.filter(log => log.type === LogType.DEADLINE_VIOLATION).length;
@@ -415,9 +494,9 @@ export class SystemLogService {
 
   exportLogs(filter?: LogFilter): string {
     const logs = filter ? this.getFilteredLogs(filter) : this.getAllLogs();
-    
+
     const csvHeader = 'Timestamp,Type,Category,Severity,Title,Message,User,Request ID\n';
-    const csvData = logs.map(log => 
+    const csvData = logs.map(log =>
       `"${log.timestamp.toISOString()}","${log.type}","${log.category}","${log.severity}","${log.title}","${log.message}","${log.userName || ''}","${log.requestId || ''}"`
     ).join('\n');
 

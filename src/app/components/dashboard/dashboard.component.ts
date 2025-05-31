@@ -21,6 +21,10 @@ import { UserService } from '../../services/user.service';
 import { CashRequestService } from '../../services/cash-request.service';
 import { NotificationService } from '../../services/notification.service';
 import { SystemLogService } from '../../services/system-log.service';
+import { OverdueMonitoringService } from '../../services/overdue-monitoring.service';
+
+// Components
+import { OverdueAlertComponent } from '../overdue-alert/overdue-alert.component';
 
 @Component({
   selector: 'app-dashboard',
@@ -37,7 +41,8 @@ import { SystemLogService } from '../../services/system-log.service';
     MatBadgeModule,
     MatDividerModule,
     MatTabsModule,
-    NotificationPanelComponent
+    NotificationPanelComponent,
+    OverdueAlertComponent
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
@@ -61,6 +66,7 @@ export class DashboardComponent implements OnInit {
     private cashRequestService: CashRequestService,
     private notificationService: NotificationService,
     private systemLogService: SystemLogService,
+    private overdueMonitoringService: OverdueMonitoringService,
     private router: Router
   ) {}
 
