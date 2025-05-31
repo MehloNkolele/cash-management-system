@@ -41,107 +41,116 @@
 
   <!-- Main Content -->
   <div class="dashboard-content">
-    <!-- Welcome Section -->
-    <div class="welcome-section">
-      <mat-card class="welcome-card">
-        <mat-card-header>
-          <mat-card-title>Welcome, {{ currentUser?.fullName }}</mat-card-title>
-          <mat-card-subtitle>Cash Issuer - {{ currentUser?.department }}</mat-card-subtitle>
-        </mat-card-header>
-        <mat-card-content>
-          <p>Review and manage cash requests from team members.</p>
-        </mat-card-content>
-      </mat-card>
+    <!-- Compact Welcome Header -->
+    <div class="welcome-header">
+      <div class="welcome-content">
+        <div class="user-info">
+          <h1 class="welcome-title">Welcome, {{ currentUser?.fullName }}</h1>
+          <p class="user-role">Cash Issuer • {{ currentUser?.department }}</p>
+        </div>
+        <div class="quick-stats">
+          <div class="quick-stat">
+            <span class="stat-value">{{ getPendingRequestsCount() }}</span>
+            <span class="stat-label">Pending</span>
+          </div>
+          <div class="quick-stat">
+            <span class="stat-value">{{ getActiveRequestsCount() }}</span>
+            <span class="stat-label">Active</span>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <!-- Statistics Cards -->
-    <div class="stats-section">
-      <mat-card class="stat-card pending clickable" (click)="navigateToTab(0)">
-        <mat-card-content>
-          <div class="stat-content">
+    <!-- Enhanced Statistics Cards -->
+    <div class="stats-grid">
+      <!-- Pending Requests Card -->
+      <div class="modern-stat-card pending-card clickable" (click)="navigateToTab(0)">
+        <div class="card-background"></div>
+        <div class="card-content">
+          <div class="stat-icon">
             <mat-icon>schedule</mat-icon>
-            <div class="stat-info">
-              <div class="stat-number">{{ getPendingRequestsCount() }}</div>
-              <div class="stat-label">Pending Requests</div>
-            </div>
           </div>
-        </mat-card-content>
-      </mat-card>
+          <div class="stat-details">
+            <div class="stat-number">{{ getPendingRequestsCount() }}</div>
+            <div class="stat-label">Pending Requests</div>
+            <div class="stat-description">Awaiting approval</div>
+          </div>
+        </div>
+      </div>
 
-      <mat-card class="stat-card active clickable" (click)="navigateToTab(1)">
-        <mat-card-content>
-          <div class="stat-content">
+      <!-- Active Requests Card -->
+      <div class="modern-stat-card active-card clickable" (click)="navigateToTab(1)">
+        <div class="card-background"></div>
+        <div class="card-content">
+          <div class="stat-icon">
             <mat-icon>payments</mat-icon>
-            <div class="stat-info">
-              <div class="stat-number">{{ getActiveRequestsCount() }}</div>
-              <div class="stat-label">Active Requests</div>
-            </div>
           </div>
-        </mat-card-content>
-      </mat-card>
+          <div class="stat-details">
+            <div class="stat-number">{{ getActiveRequestsCount() }}</div>
+            <div class="stat-label">Active Requests</div>
+            <div class="stat-description">In progress</div>
+          </div>
+        </div>
+      </div>
 
-      <mat-card class="stat-card total clickable" (click)="navigateToTab(2)">
-        <mat-card-content>
-          <div class="stat-content">
+      <!-- Total Requests Card -->
+      <div class="modern-stat-card total-card clickable" (click)="navigateToTab(2)">
+        <div class="card-background"></div>
+        <div class="card-content">
+          <div class="stat-icon">
             <mat-icon>assessment</mat-icon>
-            <div class="stat-info">
-              <div class="stat-number">{{ getTotalRequestsCount() }}</div>
-              <div class="stat-label">Total Requests</div>
-            </div>
           </div>
-        </mat-card-content>
-      </mat-card>
+          <div class="stat-details">
+            <div class="stat-number">{{ getTotalRequestsCount() }}</div>
+            <div class="stat-label">Total Requests</div>
+            <div class="stat-description">All time</div>
+          </div>
+        </div>
+      </div>
 
-      <!-- Inventory Summary Cards -->
-      <mat-card class="stat-card inventory-value-card clickable"
-                (click)="onViewInventory()"
-                title="Click to view detailed inventory management">
-        <mat-card-content>
-          <div class="stat-content">
-            <div class="stat-icon">
-              <mat-icon>account_balance_wallet</mat-icon>
-            </div>
-            <div class="stat-details">
-              <div class="stat-number">{{ formatCurrency(totalInventoryValue) }}</div>
-              <div class="stat-label">Total Inventory Value</div>
-              <div class="stat-action">
-                <mat-icon class="action-icon">visibility</mat-icon>
-                <span>View Details</span>
-              </div>
-            </div>
+      <!-- Inventory Value Card -->
+      <div class="modern-stat-card inventory-card clickable"
+           (click)="onViewInventory()"
+           title="Click to view detailed inventory management">
+        <div class="card-background"></div>
+        <div class="card-content">
+          <div class="stat-icon">
+            <mat-icon>account_balance_wallet</mat-icon>
           </div>
-        </mat-card-content>
-      </mat-card>
+          <div class="stat-details">
+            <div class="stat-number">{{ formatCurrency(totalInventoryValue) }}</div>
+            <div class="stat-label">Inventory Value</div>
+            <div class="stat-description">Total available</div>
+          </div>
+        </div>
+      </div>
 
-      <mat-card class="stat-card inventory-notes-card clickable"
-                (click)="onViewInventory()"
-                title="Click to view detailed inventory management">
-        <mat-card-content>
-          <div class="stat-content">
-            <div class="stat-icon">
-              <mat-icon>receipt</mat-icon>
-            </div>
-            <div class="stat-details">
-              <div class="stat-number">{{ formatInventoryNumber(totalInventoryNotes) }}</div>
-              <div class="stat-label">Total Notes Available</div>
-              <div class="stat-action">
-                <mat-icon class="action-icon">visibility</mat-icon>
-                <span>View Details</span>
-              </div>
-            </div>
+      <!-- Inventory Notes Card -->
+      <div class="modern-stat-card notes-card clickable"
+           (click)="onViewInventory()"
+           title="Click to view detailed inventory management">
+        <div class="card-background"></div>
+        <div class="card-content">
+          <div class="stat-icon">
+            <mat-icon>receipt</mat-icon>
           </div>
-        </mat-card-content>
-      </mat-card>
+          <div class="stat-details">
+            <div class="stat-number">{{ formatInventoryNumber(totalInventoryNotes) }}</div>
+            <div class="stat-label">Notes Available</div>
+            <div class="stat-description">Ready to issue</div>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <!-- Requests Tabs -->
+    <!-- Modern Requests Section -->
     <div class="requests-section">
-      <mat-card class="requests-card">
-        <mat-card-header>
-          <mat-card-title>Cash Requests Management</mat-card-title>
-          <mat-card-subtitle>Review, approve, and track cash requests</mat-card-subtitle>
-        </mat-card-header>
-        <mat-card-content>
+      <div class="requests-container">
+        <div class="section-header">
+          <h2 class="section-title">Cash Requests Management</h2>
+          <p class="section-subtitle">Review, approve, and track cash requests</p>
+        </div>
+        <div class="requests-content">
           <mat-tab-group #tabGroup [selectedIndex]="selectedTabIndex" (selectedIndexChange)="onTabChange($event)">
             <!-- Pending Requests Tab -->
             <mat-tab label="Pending Requests">
@@ -386,8 +395,8 @@
               </div>
             </mat-tab>
           </mat-tab-group>
-        </mat-card-content>
-      </mat-card>
+        </div>
+      </div>
     </div>
   </div>
 </div>
