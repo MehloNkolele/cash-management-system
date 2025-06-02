@@ -11,6 +11,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatTabsModule, MatTabGroup } from '@angular/material/tabs';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 
 import { NotificationPanelComponent } from '../notification-panel/notification-panel.component';
 
@@ -22,10 +23,8 @@ import { CashRequestService } from '../../services/cash-request.service';
 import { InventoryService } from '../../services/inventory.service';
 import { NotificationService } from '../../services/notification.service';
 import { SystemLogService } from '../../services/system-log.service';
-import { OverdueMonitoringService } from '../../services/overdue-monitoring.service';
-
-// Components
-import { OverdueAlertComponent } from '../overdue-alert/overdue-alert.component';
+import { IssueService } from '../../services/issue.service';
+import { ReportIssueModalComponent } from '../report-issue-modal/report-issue-modal.component';
 
 @Component({
   selector: 'app-issuer-dashboard',
@@ -42,8 +41,8 @@ import { OverdueAlertComponent } from '../overdue-alert/overdue-alert.component'
     MatBadgeModule,
     MatTabsModule,
     MatDividerModule,
-    NotificationPanelComponent,
-    OverdueAlertComponent
+    MatDialogModule,
+    NotificationPanelComponent
   ],
   templateUrl: './issuer-dashboard.component.html',
   styleUrl: './issuer-dashboard.component.scss'
@@ -72,7 +71,8 @@ export class IssuerDashboardComponent implements OnInit {
     private inventoryService: InventoryService,
     private notificationService: NotificationService,
     private systemLogService: SystemLogService,
-    private overdueMonitoringService: OverdueMonitoringService,
+    private issueService: IssueService,
+    private dialog: MatDialog,
     private router: Router
   ) {}
 
@@ -289,5 +289,22 @@ export class IssuerDashboardComponent implements OnInit {
   navigateToDashboard(): void {
     // Already on issuer dashboard, but could refresh or scroll to top
     window.scrollTo(0, 0);
+  }
+
+  onReportIssue(): void {
+    const dialogRef = this.dialog.open(ReportIssueModalComponent, {
+      width: '700px',
+      disableClose: true,
+      data: {
+        // Could pass current request context if needed
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result?.success) {
+        // Refresh data to show any updates
+        this.refreshData();
+      }
+    });
   }
 }

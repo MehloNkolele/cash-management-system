@@ -13,6 +13,12 @@
 
     <span class="toolbar-spacer"></span>
 
+    <!-- Report Issue Button -->
+    <button mat-raised-button color="warn" (click)="onReportIssue()" class="report-issue-btn" title="Report an issue">
+      <mat-icon>report_problem</mat-icon>
+      Report Issue
+    </button>
+
     <!-- Refresh Button -->
     <button mat-icon-button (click)="refreshData()" title="Refresh">
       <mat-icon>refresh</mat-icon>
@@ -41,15 +47,12 @@
 
   <!-- Main Content -->
   <div class="dashboard-content">
-    <!-- Overdue Alert Component -->
-    <app-overdue-alert [showFloatingIndicator]="false" [autoExpand]="true"></app-overdue-alert>
-
     <!-- Compact Welcome Header -->
     <div class="welcome-header">
       <div class="welcome-content">
         <div class="user-info">
           <h1 class="welcome-title">Welcome, {{ currentUser?.fullName }}</h1>
-          <p class="user-role">Cash Issuer • {{ currentUser?.department }}</p>
+          <p class="user-role">Money Handler • {{ currentUser?.department }}</p>
         </div>
         <div class="quick-stats">
           <div class="quick-stat">
@@ -66,6 +69,23 @@
 
     <!-- Enhanced Statistics Cards -->
     <div class="stats-grid">
+      <!-- Inventory Value Card -->
+      <div class="modern-stat-card inventory-card clickable"
+           (click)="onViewInventory()"
+           title="Click to view detailed inventory management">
+        <div class="card-background"></div>
+        <div class="card-content">
+          <div class="stat-icon">
+            <mat-icon>account_balance_wallet</mat-icon>
+          </div>
+          <div class="stat-details">
+            <div class="stat-number">{{ formatCurrency(totalInventoryValue) }}</div>
+            <div class="stat-label">Inventory Value</div>
+            <div class="stat-description">Total available</div>
+          </div>
+        </div>
+      </div>
+
       <!-- Pending Requests Card -->
       <div class="modern-stat-card pending-card clickable" (click)="navigateToTab(0)">
         <div class="card-background"></div>
@@ -107,23 +127,6 @@
             <div class="stat-number">{{ getTotalRequestsCount() }}</div>
             <div class="stat-label">Total Requests</div>
             <div class="stat-description">All time</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Inventory Value Card -->
-      <div class="modern-stat-card inventory-card clickable"
-           (click)="onViewInventory()"
-           title="Click to view detailed inventory management">
-        <div class="card-background"></div>
-        <div class="card-content">
-          <div class="stat-icon">
-            <mat-icon>account_balance_wallet</mat-icon>
-          </div>
-          <div class="stat-details">
-            <div class="stat-number">{{ formatCurrency(totalInventoryValue) }}</div>
-            <div class="stat-label">Inventory Value</div>
-            <div class="stat-description">Total available</div>
           </div>
         </div>
       </div>

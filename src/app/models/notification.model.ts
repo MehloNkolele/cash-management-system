@@ -18,7 +18,8 @@ export enum NotificationType {
   CASH_RETURNED = 'cash_returned',
   REQUEST_COMPLETED = 'request_completed',
   REQUEST_REJECTED = 'request_rejected',
-  REQUEST_CANCELLED = 'request_cancelled'
+  ISSUE_REPORTED = 'issue_reported',
+  ISSUE_RESOLVED = 'issue_resolved'
 }
 
 export interface NotificationSettings {

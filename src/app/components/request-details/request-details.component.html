@@ -181,7 +181,7 @@
               <span class="series" *ngIf="note.series">{{ getSeriesLabel(note.series) }}</span>
             </div>
             <div class="note-details">
-              <div class="quantity">{{ note.quantity }} notes</div>
+              <div class="quantity">{{ getBatchCount(note.quantity) }} batches</div>
               <div class="subtotal">{{ formatCurrency(note.denomination * note.quantity) }}</div>
             </div>
           </div>
@@ -196,7 +196,7 @@
               <span>Coins Requested</span>
             </div>
             <div *ngIf="request.dyePackRequired" class="extra-item">
-              <mat-icon>security</mat-icon>
+              <mat-icon>report_problem</mat-icon>
               <span>Dye Pack Required</span>
             </div>
           </div>
@@ -354,12 +354,12 @@
       <mat-card class="action-card" *ngIf="canComplete()">
         <mat-card-header>
           <mat-card-title>Complete Request</mat-card-title>
-          <mat-card-subtitle>Mark this request as completed</mat-card-subtitle>
+          <mat-card-subtitle>Finalize return and add cash back to inventory</mat-card-subtitle>
         </mat-card-header>
         <mat-card-actions>
           <button mat-raised-button color="primary" (click)="completeRequest()">
             <mat-icon>done_all</mat-icon>
-            Complete Request
+            Complete
           </button>
         </mat-card-actions>
       </mat-card>

@@ -41,7 +41,7 @@ export class UserLoginComponent implements OnInit {
 
   ngOnInit(): void {
     this.users = this.userService.getAllUsers();
-    
+
     // Check if user is already logged in
     const currentUser = this.userService.getCurrentUser();
     if (currentUser) {
@@ -78,7 +78,7 @@ export class UserLoginComponent implements OnInit {
   getUserRoleDisplay(role: UserRole): string {
     switch (role) {
       case UserRole.ISSUER:
-        return 'Cash Issuer';
+        return 'Money Handler';
       case UserRole.REQUESTER:
         return 'Cash Requester';
       case UserRole.MANAGER:

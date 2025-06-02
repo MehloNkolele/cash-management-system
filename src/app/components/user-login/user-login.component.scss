@@ -34,7 +34,6 @@
 .app-toolbar {
   background-color: var(--absa-red) !important;
   color: var(--absa-white) !important;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
   border-bottom: 2px solid rgba(255,255,255,0.1);
   display: flex;
   align-items: center;
@@ -322,14 +321,14 @@
   .info-card {
     margin: 0 0.5rem;
     border-radius: 12px;
-    
+
 
     mat-card-header {
       padding: 1.25rem 1rem 0.75rem;
 
       mat-card-title {
         font-size: 1.2rem;
-       
+
       }
     }
 

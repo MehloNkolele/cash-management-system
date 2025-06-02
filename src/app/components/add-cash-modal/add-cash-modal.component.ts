@@ -38,7 +38,7 @@ export interface AddCashData {
         <mat-icon>add_circle</mat-icon>
         Add Cash Inventory
       </h2>
-      
+
       <mat-dialog-content>
         <form #addCashForm="ngForm" class="add-cash-form">
           <mat-form-field appearance="outline" class="full-width">
@@ -59,31 +59,47 @@ export interface AddCashData {
             </mat-select>
           </mat-form-field>
 
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Quantity to Add</mat-label>
-            <input matInput 
-                   type="number" 
-                   [(ngModel)]="quantity" 
-                   name="quantity" 
-                   min="1" 
-                   required
-                   placeholder="Enter quantity">
-          </mat-form-field>
+          <div class="quantity-inputs">
+            <mat-form-field appearance="outline" class="batch-field">
+              <mat-label>Batches (100 notes each)</mat-label>
+              <input matInput
+                     type="number"
+                     [(ngModel)]="batches"
+                     name="batches"
+                     min="0"
+                     placeholder="0">
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="singles-field">
+              <mat-label>Singles</mat-label>
+              <input matInput
+                     type="number"
+                     [(ngModel)]="singles"
+                     name="singles"
+                     min="0"
+                     max="99"
+                     placeholder="0">
+            </mat-form-field>
+          </div>
 
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>Reason</mat-label>
-            <input matInput 
-                   [(ngModel)]="reason" 
-                   name="reason" 
+            <input matInput
+                   [(ngModel)]="reason"
+                   name="reason"
                    required
                    placeholder="Enter reason for adding cash">
           </mat-form-field>
 
-          <div class="summary-section" *ngIf="selectedDenomination && quantity > 0">
+          <div class="summary-section" *ngIf="selectedDenomination && totalQuantity > 0">
             <h4>Summary</h4>
             <div class="summary-item">
+              <span>Total Notes:</span>
+              <span class="value">{{ totalQuantity }} notes</span>
+            </div>
+            <div class="summary-item">
               <span>Total Value:</span>
-              <span class="value">{{ formatCurrency(selectedDenomination * quantity) }}</span>
+              <span class="value">{{ formatCurrency(selectedDenomination * totalQuantity) }}</span>
             </div>
           </div>
         </form>
@@ -91,9 +107,9 @@ export interface AddCashData {
 
       <mat-dialog-actions align="end">
         <button mat-button (click)="onCancel()">Cancel</button>
-        <button mat-raised-button 
-                color="primary" 
-                (click)="onAddCash()" 
+        <button mat-raised-button
+                color="primary"
+                (click)="onAddCash()"
                 [disabled]="!isFormValid()">
           <mat-icon>add</mat-icon>
           Add Cash
@@ -126,6 +142,24 @@ export interface AddCashData {
       width: 100%;
     }
 
+    .quantity-inputs {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+
+      .batch-field, .singles-field {
+        flex: 1;
+      }
+
+      .batch-field {
+        min-width: 200px;
+      }
+
+      .singles-field {
+        min-width: 120px;
+      }
+    }
+
     .summary-section {
       background-color: var(--absa-gray-light);
       padding: 1rem;
@@ -141,6 +175,11 @@ export interface AddCashData {
         display: flex;
         justify-content: space-between;
         align-items: center;
+        margin-bottom: 0.5rem;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
 
         .value {
           font-weight: 600;
@@ -159,8 +198,14 @@ export interface AddCashData {
 export class AddCashModalComponent {
   selectedSeries: NoteSeries | null = null;
   selectedDenomination: NoteDenomination | null = null;
-  quantity: number = 0;
+  batches: number = 0;
+  singles: number = 0;
   reason: string = '';
+
+  // Computed property for total quantity
+  get totalQuantity(): number {
+    return (this.batches * 100) + this.singles;
+  }
 
   availableSeries = Object.values(NoteSeries).map(series => ({
     value: series,
@@ -191,9 +236,9 @@ export class AddCashModalComponent {
   }
 
   isFormValid(): boolean {
-    return !!(this.selectedSeries && 
-              this.selectedDenomination && 
-              this.quantity > 0 && 
+    return !!(this.selectedSeries &&
+              this.selectedDenomination &&
+              this.totalQuantity > 0 &&
               this.reason.trim());
   }
 
@@ -207,24 +252,29 @@ export class AddCashModalComponent {
       const success = this.inventoryService.addCash(
         this.selectedSeries!,
         this.selectedDenomination!,
-        this.quantity,
+        this.totalQuantity,
         this.reason
       );
 
       if (success) {
+        // Create descriptive message for logging
+        const batchDescription = this.batches > 0 ? `${this.batches} batch${this.batches !== 1 ? 'es' : ''}` : '';
+        const singlesDescription = this.singles > 0 ? `${this.singles} single${this.singles !== 1 ? 's' : ''}` : '';
+        const quantityDescription = [batchDescription, singlesDescription].filter(Boolean).join(' + ');
+
         // Log the action
         this.systemLogService.logManagerAction(
           'Add Cash Inventory',
-          `Added ${this.quantity} x ${DENOMINATION_LABELS[this.selectedDenomination!]} (${NOTE_SERIES_LABELS[this.selectedSeries!]}) - ${this.reason}`
+          `Added ${quantityDescription} (${this.totalQuantity} total) x ${DENOMINATION_LABELS[this.selectedDenomination!]} (${NOTE_SERIES_LABELS[this.selectedSeries!]}) - ${this.reason}`
         );
 
         this.snackBar.open(
-          `Successfully added ${this.quantity} x ${DENOMINATION_LABELS[this.selectedDenomination!]} notes`,
+          `Successfully added ${quantityDescription} (${this.totalQuantity} notes) x ${DENOMINATION_LABELS[this.selectedDenomination!]}`,
           'Close',
-          { duration: 3000 }
+          { duration: 4000 }
         );
 
-        this.dialogRef.close({ success: true, added: this.quantity });
+        this.dialogRef.close({ success: true, added: this.totalQuantity });
       } else {
         this.snackBar.open('Failed to add cash inventory', 'Close', { duration: 3000 });
       }

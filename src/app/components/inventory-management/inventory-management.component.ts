@@ -220,6 +220,38 @@ export class InventoryManagementComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Convert quantity to batches and singles display
+  formatQuantityDisplay(quantity: number): string {
+    const batches = Math.floor(quantity / 100);
+    const singles = quantity % 100;
+
+    if (batches === 0) {
+      return `${singles} single${singles !== 1 ? 's' : ''}`;
+    } else if (singles === 0) {
+      return `${batches} batch${batches !== 1 ? 'es' : ''}`;
+    } else {
+      return `${batches} batch${batches !== 1 ? 'es' : ''} + ${singles} single${singles !== 1 ? 's' : ''}`;
+    }
+  }
+
+  // Get total batches for a series
+  getSeriesBatches(series: NoteSeries): number {
+    const total = this.getSeriesTotal(series);
+    return Math.floor(total.quantity / 100);
+  }
+
+  // Get total singles for a series
+  getSeriesSingles(series: NoteSeries): number {
+    const total = this.getSeriesTotal(series);
+    return total.quantity % 100;
+  }
+
+  // Format series total display
+  formatSeriesQuantityDisplay(series: NoteSeries): string {
+    const total = this.getSeriesTotal(series);
+    return this.formatQuantityDisplay(total.quantity);
+  }
+
   logout(): void {
     this.userService.logout();
     this.router.navigate(['/login']);

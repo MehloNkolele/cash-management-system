@@ -118,7 +118,7 @@
                 <div class="series-stats">
                   <div class="stat-item">
                     <span class="stat-label">Total Notes:</span>
-                    <span class="stat-value">{{ formatNumber(getSeriesTotal(series).quantity) }}</span>
+                    <span class="stat-value">{{ formatSeriesQuantityDisplay(series) }}</span>
                   </div>
                   <div class="stat-item">
                     <span class="stat-label">Total Value:</span>
@@ -155,7 +155,7 @@
                   <ng-container matColumnDef="quantity">
                     <th mat-header-cell *matHeaderCellDef>Quantity</th>
                     <td mat-cell *matCellDef="let item">
-                      <span class="quantity-value">{{ formatNumber(item.quantity) }}</span>
+                      <span class="quantity-value">{{ formatQuantityDisplay(item.quantity) }}</span>
                     </td>
                   </ng-container>
 

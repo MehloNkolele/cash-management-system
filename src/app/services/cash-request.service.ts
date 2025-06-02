@@ -164,6 +164,24 @@ export class CashRequestService {
       throw new Error('Issuer not found');
     }
 
+    const request = this.getRequestById(id);
+    if (!request) {
+      throw new Error('Request not found');
+    }
+
+    // Check inventory availability before approval
+    const rejectionResult = this.checkForAutoRejection(request.bankNotes);
+    if (rejectionResult.isRejected) {
+      // Auto-reject the request due to insufficient inventory
+      return this.updateRequest(id, {
+        status: RequestStatus.REJECTED,
+        rejectionReason: rejectionResult.reason,
+        rejectedBy: 'System (Auto-rejection)',
+        rejectedDate: new Date(),
+        isAutoRejected: true
+      });
+    }
+
     return this.updateRequest(id, {
       status: RequestStatus.APPROVED,
       issuedBy: issuer.fullName,
@@ -172,6 +190,42 @@ export class CashRequestService {
   }
 
   issueCash(id: string, cashCountedBeforeIssuance: boolean): CashRequest | null {
+    const request = this.getRequestById(id);
+    if (!request || request.status !== RequestStatus.APPROVED) {
+      throw new Error('Request not found or not in approved status');
+    }
+
+    const currentUser = this.userService.getCurrentUser();
+    if (!currentUser) {
+      throw new Error('No current user found');
+    }
+
+    // Double-check inventory availability before issuance (in case inventory changed since approval)
+    const rejectionResult = this.checkForAutoRejection(request.bankNotes);
+    if (rejectionResult.isRejected) {
+      // Auto-reject the request due to insufficient inventory at time of issuance
+      this.updateRequest(id, {
+        status: RequestStatus.REJECTED,
+        rejectionReason: `Inventory insufficient at time of issuance: ${rejectionResult.reason}`,
+        rejectedBy: 'System (Auto-rejection)',
+        rejectedDate: new Date(),
+        isAutoRejected: true
+      });
+      throw new Error(`Cannot issue cash: ${rejectionResult.reason}`);
+    }
+
+    // Deduct cash from inventory
+    try {
+      request.bankNotes.forEach(note => {
+        // Remove cash from inventory using FIFO (oldest series first)
+        this.inventoryService.removeCashIssuance(note.denomination, note.quantity, `Issued for request ${id}`, currentUser.fullName);
+      });
+    } catch (error) {
+      console.error('Error removing cash from inventory:', error);
+      throw new Error('Failed to update inventory during cash issuance');
+    }
+
+    // Update request status
     return this.updateRequest(id, {
       status: RequestStatus.ISSUED,
       cashCountedBeforeIssuance
@@ -190,18 +244,71 @@ export class CashRequestService {
       updates.comments = comments;
     }
 
-    if (cashCountedOnReturn && !comments) {
-      updates.status = RequestStatus.COMPLETED;
+    // Always set to RETURNED status - managers will process and complete later
+    return this.updateRequest(id, updates);
+  }
+
+  processReturn(id: string, processedBy: string, verificationComments?: string): CashRequest | null {
+    const request = this.getRequestById(id);
+    if (!request || request.status !== RequestStatus.RETURNED) {
+      throw new Error('Request not found or not in returned status');
+    }
+
+    // Add cash back to inventory
+    try {
+      request.bankNotes.forEach(note => {
+        // Add cash back to inventory using FIFO reverse (add to newest series first)
+        this.inventoryService.addCashReturn(note.denomination, note.quantity, `Return from request ${id}`, processedBy);
+      });
+    } catch (error) {
+      console.error('Error adding cash back to inventory:', error);
+      throw new Error('Failed to update inventory during return processing');
+    }
+
+    // Complete the request
+    const updates: Partial<CashRequest> = {
+      status: RequestStatus.COMPLETED,
+      updatedAt: new Date()
+    };
+
+    if (verificationComments) {
+      updates.comments = (request.comments ? request.comments + '\n' : '') +
+                        `Manager verification: ${verificationComments}`;
     }
 
     return this.updateRequest(id, updates);
   }
 
   completeRequest(id: string): CashRequest | null {
+    const request = this.getRequestById(id);
+    if (!request) {
+      throw new Error('Request not found');
+    }
+
+    const currentUser = this.userService.getCurrentUser();
+    if (!currentUser) {
+      throw new Error('No current user found');
+    }
+
+    // If request is in RETURNED status, add cash back to inventory before completing
+    if (request.status === RequestStatus.RETURNED) {
+      try {
+        request.bankNotes.forEach(note => {
+          // Add cash back to inventory using LIFO (newest series first)
+          this.inventoryService.addCashReturn(note.denomination, note.quantity, `Return completed for request ${id}`, currentUser.fullName);
+        });
+      } catch (error) {
+        console.error('Error adding cash back to inventory:', error);
+        throw new Error('Failed to update inventory during request completion');
+      }
+    }
+
     return this.updateRequest(id, {
       status: RequestStatus.COMPLETED
     });
   }
+
+
 
   cancelRequest(id: string, reason?: string): CashRequest | null {
     const updates: Partial<CashRequest> = {

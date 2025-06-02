@@ -23,7 +23,8 @@ export enum LogType {
   INVENTORY_CHANGE = 'inventory_change',
   DEADLINE_VIOLATION = 'deadline_violation',
   DISCREPANCY = 'discrepancy',
-  ERROR = 'error'
+  ERROR = 'error',
+  ISSUE_REPORTED = 'issue_reported'
 }
 
 export enum LogCategory {
@@ -34,7 +35,8 @@ export enum LogCategory {
   SYSTEM_CONFIGURATION = 'system_configuration',
   AUDIT_TRAIL = 'audit_trail',
   DEADLINE_MONITORING = 'deadline_monitoring',
-  CASH_HANDLING = 'cash_handling'
+  CASH_HANDLING = 'cash_handling',
+  ISSUE_MANAGEMENT = 'issue_management'
 }
 
 export enum LogSeverity {
@@ -120,7 +122,8 @@ export const LOG_TYPE_LABELS: { [key in LogType]: string } = {
   [LogType.INVENTORY_CHANGE]: 'Inventory Change',
   [LogType.DEADLINE_VIOLATION]: 'Deadline Violation',
   [LogType.DISCREPANCY]: 'Discrepancy',
-  [LogType.ERROR]: 'Error'
+  [LogType.ERROR]: 'Error',
+  [LogType.ISSUE_REPORTED]: 'Issue Reported'
 };
 
 export const LOG_CATEGORY_LABELS: { [key in LogCategory]: string } = {
@@ -131,7 +134,8 @@ export const LOG_CATEGORY_LABELS: { [key in LogCategory]: string } = {
   [LogCategory.SYSTEM_CONFIGURATION]: 'System Configuration',
   [LogCategory.AUDIT_TRAIL]: 'Audit Trail',
   [LogCategory.DEADLINE_MONITORING]: 'Deadline Monitoring',
-  [LogCategory.CASH_HANDLING]: 'Cash Handling'
+  [LogCategory.CASH_HANDLING]: 'Cash Handling',
+  [LogCategory.ISSUE_MANAGEMENT]: 'Issue Management'
 };
 
 export const LOG_SEVERITY_LABELS: { [key in LogSeverity]: string } = {

@@ -50,6 +50,16 @@ body {
   background-color: var(--absa-gray-light);
 }
 
+// Ensure content doesn't get hidden behind fixed navbar
+.dashboard-container,
+.issuer-dashboard-container,
+.manager-dashboard-container,
+.cash-request-wizard,
+.inventory-management,
+.alerts-overview-container {
+  padding-top: 0; // Remove any existing padding-top since toolbar is sticky
+}
+
 // Absa Brand Typography
 h1, h2, h3, h4, h5, h6 {
   color: var(--absa-dark-blue);
@@ -81,6 +91,14 @@ h1, h2, h3, h4, h5, h6 {
 .mat-toolbar.mat-primary {
   background-color: var(--absa-red) !important;
   color: var(--absa-white) !important;
+}
+
+// Global toolbar positioning - prevent scrolling
+.app-toolbar {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 1000 !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
 }
 
 .mat-raised-button.mat-primary {

@@ -55,6 +55,9 @@ export class RequestDetailsComponent implements OnInit {
   isIssuer: boolean = false;
   isRequester: boolean = false;
 
+  // Batch configuration
+  readonly NOTES_PER_BATCH = 100;
+
   // Form fields for issuer actions
   expectedReturnDate: Date = new Date();
   cashCountedBeforeIssuance: boolean = false;
@@ -160,10 +163,12 @@ export class RequestDetailsComponent implements OnInit {
     try {
       this.cashRequestService.issueCash(this.request.id, this.cashCountedBeforeIssuance);
 
-      this.snackBar.open('Cash issued successfully!', 'Close', { duration: 3000 });
+      this.snackBar.open('Cash issued successfully and inventory updated!', 'Close', { duration: 3000 });
       this.loadRequest(this.request.id);
     } catch (error) {
-      this.snackBar.open('Error issuing cash', 'Close', { duration: 3000 });
+      console.error('Error issuing cash:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error issuing cash';
+      this.snackBar.open(errorMessage, 'Close', { duration: 5000 });
     }
   }
 
@@ -191,10 +196,16 @@ export class RequestDetailsComponent implements OnInit {
     try {
       this.cashRequestService.completeRequest(this.request.id);
 
-      this.snackBar.open('Request completed successfully!', 'Close', { duration: 3000 });
+      const message = this.request.status === RequestStatus.RETURNED
+        ? 'Request completed successfully and cash added back to inventory!'
+        : 'Request completed successfully!';
+
+      this.snackBar.open(message, 'Close', { duration: 3000 });
       this.loadRequest(this.request.id);
     } catch (error) {
-      this.snackBar.open('Error completing request', 'Close', { duration: 3000 });
+      console.error('Error completing request:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error completing request';
+      this.snackBar.open(errorMessage, 'Close', { duration: 5000 });
     }
   }
 
@@ -244,6 +255,10 @@ export class RequestDetailsComponent implements OnInit {
 
   formatCurrency(amount: number): string {
     return `R${amount.toLocaleString()}`;
+  }
+
+  getBatchCount(quantity: number): number {
+    return Math.ceil(quantity / this.NOTES_PER_BATCH);
   }
 
   getStatusColor(status: RequestStatus): string {

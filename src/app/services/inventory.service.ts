@@ -249,6 +249,141 @@ export class InventoryService {
     return this.updateInventory(id, -quantity, reason, TransactionType.REMOVE);
   }
 
+  removeCashIssuance(denomination: NoteDenomination, quantity: number, reason: string, issuedBy: string): boolean {
+    const currentUser = this.userService.getCurrentUser();
+    if (!currentUser) {
+      throw new Error('No current user found');
+    }
+
+    const inventory = this.getAllInventory();
+
+    // Find available inventory items for this denomination (prefer older series first - FIFO)
+    const seriesPriority = [NoteSeries.BIG_5, NoteSeries.COMMEMORATIVE, NoteSeries.V6, NoteSeries.MANDELA];
+
+    let remainingToRemove = quantity;
+    const transactions: InventoryTransaction[] = [];
+
+    for (const series of seriesPriority) {
+      if (remainingToRemove <= 0) break;
+
+      const inventoryItem = inventory.find(item =>
+        item.denomination === denomination && item.noteSeries === series && item.quantity > 0
+      );
+
+      if (inventoryItem) {
+        // Remove as much as possible from this series
+        const removeFromThisSeries = Math.min(remainingToRemove, inventoryItem.quantity);
+
+        // Update inventory item
+        inventoryItem.quantity -= removeFromThisSeries;
+        inventoryItem.value = inventoryItem.quantity * inventoryItem.denomination;
+        inventoryItem.lastUpdated = new Date();
+        inventoryItem.updatedBy = issuedBy;
+
+        // Create transaction record
+        transactions.push({
+          id: this.generateTransactionId(),
+          type: TransactionType.ISSUE,
+          inventoryId: inventoryItem.id,
+          quantityChange: -removeFromThisSeries,
+          previousQuantity: inventoryItem.quantity + removeFromThisSeries,
+          newQuantity: inventoryItem.quantity,
+          reason: reason,
+          performedBy: issuedBy,
+          timestamp: new Date()
+        });
+
+        remainingToRemove -= removeFromThisSeries;
+      }
+    }
+
+    if (remainingToRemove > 0) {
+      throw new Error(`Insufficient inventory for denomination R${denomination}. Needed ${quantity}, but only ${quantity - remainingToRemove} available.`);
+    }
+
+    // Save changes
+    this.saveInventory(inventory);
+    transactions.forEach(transaction => this.saveTransaction(transaction));
+
+    // Log the inventory change
+    this.systemLogService.logInventoryChange(
+      `${denomination}_issue`,
+      TransactionType.ISSUE,
+      quantity,
+      issuedBy
+    );
+
+    return true;
+  }
+
+  addCashReturn(denomination: NoteDenomination, quantity: number, reason: string, returnedBy: string): boolean {
+    const currentUser = this.userService.getCurrentUser();
+    if (!currentUser || (!this.userService.hasManagerPrivileges() && !this.userService.isIssuer())) {
+      throw new Error('Insufficient privileges to process cash returns');
+    }
+
+    const inventory = this.getAllInventory();
+
+    // Find the best series to add cash back to (prefer newer series first)
+    const seriesPriority = [NoteSeries.MANDELA, NoteSeries.V6, NoteSeries.COMMEMORATIVE, NoteSeries.BIG_5];
+
+    let remainingToAdd = quantity;
+    const transactions: InventoryTransaction[] = [];
+
+    for (const series of seriesPriority) {
+      if (remainingToAdd <= 0) break;
+
+      const inventoryItem = inventory.find(item =>
+        item.denomination === denomination && item.noteSeries === series
+      );
+
+      if (inventoryItem) {
+        // Add all remaining quantity to this series
+        const addToThisSeries = remainingToAdd;
+
+        // Update inventory item
+        inventoryItem.quantity += addToThisSeries;
+        inventoryItem.value = inventoryItem.quantity * inventoryItem.denomination;
+        inventoryItem.lastUpdated = new Date();
+        inventoryItem.updatedBy = returnedBy;
+
+        // Create transaction record
+        transactions.push({
+          id: this.generateTransactionId(),
+          type: TransactionType.RETURN,
+          inventoryId: inventoryItem.id,
+          quantityChange: addToThisSeries,
+          previousQuantity: inventoryItem.quantity - addToThisSeries,
+          newQuantity: inventoryItem.quantity,
+          reason: reason,
+          performedBy: returnedBy,
+          timestamp: new Date()
+        });
+
+        remainingToAdd = 0;
+        break; // Add all to the first available series
+      }
+    }
+
+    if (remainingToAdd > 0) {
+      throw new Error(`Could not find inventory item for denomination ${denomination}`);
+    }
+
+    // Save changes
+    this.saveInventory(inventory);
+    transactions.forEach(transaction => this.saveTransaction(transaction));
+
+    // Log the inventory change
+    this.systemLogService.logInventoryChange(
+      `${denomination}_return`,
+      TransactionType.RETURN,
+      quantity,
+      returnedBy
+    );
+
+    return true;
+  }
+
   getInventorySummary(): InventorySummary {
     const inventory = this.getAllInventory();
     const settings = this.getSettings();
@@ -711,64 +846,5 @@ export class InventoryService {
     );
 
     return item ? item.quantity : 0;
-  }
-
-  // Return reserved cash back to inventory (for auto-cancellation)
-  returnReservedCash(bankNotes: BankNote[], requestId: string, returnedBy: string = 'SYSTEM'): boolean {
-    try {
-      const inventory = this.getAllInventory();
-      const transactions: InventoryTransaction[] = [];
-
-      // Add each bank note back to inventory (prioritize Mandela series for returns)
-      bankNotes.forEach(note => {
-        // Find the best series to return to (prefer Mandela series)
-        const targetItem = inventory.find(item =>
-          item.denomination === note.denomination &&
-          item.noteSeries === NoteSeries.MANDELA
-        ) || inventory.find(item =>
-          item.denomination === note.denomination
-        );
-
-        if (targetItem) {
-          const previousQuantity = targetItem.quantity;
-          targetItem.quantity += note.quantity;
-          targetItem.value = targetItem.quantity * targetItem.denomination;
-          targetItem.lastUpdated = new Date();
-          targetItem.updatedBy = returnedBy;
-
-          // Create transaction record
-          transactions.push({
-            id: this.generateTransactionId(),
-            type: TransactionType.ADD,
-            inventoryId: targetItem.id,
-            quantityChange: note.quantity,
-            previousQuantity,
-            newQuantity: targetItem.quantity,
-            reason: `Auto-cancellation return - Request ID: ${requestId}`,
-            performedBy: returnedBy,
-            timestamp: new Date()
-          });
-        }
-      });
-
-      // Save updated inventory and transactions
-      this.saveInventory(inventory);
-      transactions.forEach(transaction => this.saveTransaction(transaction));
-
-      // Log the inventory return
-      this.systemLogService.createLog({
-        type: 'inventory_change' as any,
-        category: 'cash_request' as any,
-        severity: 'info' as any,
-        title: 'Inventory Returned - Auto-Cancellation',
-        message: `Reserved cash returned to inventory for auto-cancelled request ${requestId}`,
-        metadata: { requestId, bankNotes, returnedBy, autoCancellation: true }
-      });
-
-      return true;
-    } catch (error) {
-      console.error('Error returning reserved cash to inventory:', error);
-      return false;
-    }
   }
 }

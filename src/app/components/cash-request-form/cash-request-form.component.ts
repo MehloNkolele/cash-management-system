@@ -89,6 +89,10 @@ export class CashRequestFormComponent implements OnInit {
   dyePackRequired: boolean = false;
   comments: string = '';
 
+  // Batch configuration
+  readonly NOTES_PER_BATCH = 100;
+  batchCounts: { [key in NoteDenomination]: number } = {} as any;
+
   // Inventory availability
   inventoryAvailability: InventoryAvailability[] = [];
   seriesInventoryAvailability: { [key in NoteDenomination]: SeriesInventoryAvailability[] } = {} as any;
@@ -141,11 +145,42 @@ export class CashRequestFormComponent implements OnInit {
       denomination: denom.value,
       quantity: 0
     }));
+
+    // Initialize batch counts
+    this.denominations.forEach(denom => {
+      this.batchCounts[denom.value] = 0;
+    });
   }
 
   getQuantity(denomination: NoteDenomination): number {
     const note = this.bankNotes.find(n => n.denomination === denomination);
     return note ? note.quantity : 0;
+  }
+
+  getBatchCount(denomination: NoteDenomination): number {
+    return this.batchCounts[denomination] || 0;
+  }
+
+  incrementBatch(denomination: NoteDenomination): void {
+    this.batchCounts[denomination] = (this.batchCounts[denomination] || 0) + 1;
+    this.updateQuantityFromBatch(denomination);
+  }
+
+  decrementBatch(denomination: NoteDenomination): void {
+    if (this.batchCounts[denomination] > 0) {
+      this.batchCounts[denomination]--;
+      this.updateQuantityFromBatch(denomination);
+    }
+  }
+
+  updateBatchCount(denomination: NoteDenomination, batchCount: number): void {
+    this.batchCounts[denomination] = Math.max(0, batchCount);
+    this.updateQuantityFromBatch(denomination);
+  }
+
+  private updateQuantityFromBatch(denomination: NoteDenomination): void {
+    const quantity = this.batchCounts[denomination] * this.NOTES_PER_BATCH;
+    this.updateQuantity(denomination, quantity);
   }
 
   calculateTotal(): number {
@@ -207,7 +242,21 @@ export class CashRequestFormComponent implements OnInit {
 
   isFormValid(): boolean {
     return this.selectedDepartment !== '' &&
-           (this.getSelectedNotes().length > 0 || this.coinsRequested);
+           (this.getSelectedNotes().length > 0 || this.coinsRequested) &&
+           !this.hasInventoryExceeded();
+  }
+
+  // Check if any requested amounts exceed available inventory
+  hasInventoryExceeded(): boolean {
+    return this.getSelectedNotes().some(note => {
+      if (note.series) {
+        const available = this.inventoryService.getSeriesAvailableQuantity(note.denomination, note.series);
+        return note.quantity > available;
+      } else {
+        const totalAvailable = this.inventoryService.getAvailableQuantity(note.denomination);
+        return note.quantity > totalAvailable;
+      }
+    });
   }
 
   onSubmit(): void {
@@ -344,6 +393,11 @@ export class CashRequestFormComponent implements OnInit {
     return `${item.denomination}_${item.series}`;
   }
 
+  // Convert individual notes to batches (1 batch = 100 notes)
+  getAvailableBatches(availableNotes: number): number {
+    return Math.floor(availableNotes / 100);
+  }
+
   onSmartModeToggle(enabled: boolean): void {
     // Immediate state update for responsive UI
     this.smartMode = enabled;
@@ -395,12 +449,16 @@ export class CashRequestFormComponent implements OnInit {
       if (note.series) {
         const available = this.inventoryService.getSeriesAvailableQuantity(note.denomination, note.series);
         if (note.quantity > available) {
-          warnings.push(`R${note.denomination}: Requested ${note.quantity}, only ${available} available in ${NOTE_SERIES_LABELS[note.series as keyof typeof NOTE_SERIES_LABELS]}`);
+          const batchesRequested = Math.ceil(note.quantity / 100);
+          const batchesAvailable = Math.floor(available / 100);
+          warnings.push(`R${note.denomination}: Requested ${batchesRequested} batch${batchesRequested !== 1 ? 'es' : ''} (${note.quantity} notes), only ${batchesAvailable} batch${batchesAvailable !== 1 ? 'es' : ''} (${available} notes) available in ${NOTE_SERIES_LABELS[note.series as keyof typeof NOTE_SERIES_LABELS]}. Please reduce your request to proceed.`);
         }
       } else {
         const totalAvailable = this.inventoryService.getAvailableQuantity(note.denomination);
         if (note.quantity > totalAvailable) {
-          warnings.push(`R${note.denomination}: Requested ${note.quantity}, only ${totalAvailable} available across all series`);
+          const batchesRequested = Math.ceil(note.quantity / 100);
+          const batchesAvailable = Math.floor(totalAvailable / 100);
+          warnings.push(`R${note.denomination}: Requested ${batchesRequested} batch${batchesRequested !== 1 ? 'es' : ''} (${note.quantity} notes), only ${batchesAvailable} batch${batchesAvailable !== 1 ? 'es' : ''} (${totalAvailable} notes) available across all series. Please reduce your request to proceed.`);
         }
       }
     });

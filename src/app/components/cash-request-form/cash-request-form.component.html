@@ -152,17 +152,30 @@
               </div>
             </div>
 
-            <!-- Availability Warnings -->
-            <div class="warning-panel" *ngIf="hasAvailabilityWarnings()">
-              <div class="warning-content">
+            <!-- Enhanced Inventory Warning Alert -->
+            <div class="enhanced-warning-panel" *ngIf="hasAvailabilityWarnings()">
+              <div class="warning-container">
                 <div class="warning-header">
-                  <mat-icon class="warning-icon">warning</mat-icon>
-                  <h4>Availability Alerts</h4>
+                  <div class="warning-icon-container">
+                    <mat-icon class="warning-icon">warning_amber</mat-icon>
+                  </div>
+                  <div class="warning-title">
+                    <h3>Inventory Availability Alert</h3>
+                    <p class="warning-subtitle">Your request exceeds available inventory</p>
+                  </div>
                 </div>
-                <div class="warning-list">
-                  <div *ngFor="let warning of getAvailabilityWarnings()" class="warning-item">
-                    <mat-icon class="item-icon">info</mat-icon>
-                    <span>{{ warning }}</span>
+                <div class="warning-content">
+                  <div class="warning-message">
+                    <mat-icon class="message-icon">info_outline</mat-icon>
+                    <span class="message-text">
+                      The following denominations exceed available inventory. Please adjust your request amounts to proceed with submission.
+                    </span>
+                  </div>
+                  <div class="warning-details">
+                    <div *ngFor="let warning of getAvailabilityWarnings()" class="warning-detail-item">
+                      <mat-icon class="detail-icon">error_outline</mat-icon>
+                      <span class="detail-text">{{ warning }}</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -241,7 +254,7 @@
                                   <mat-icon class="status-icon" [ngClass]="getSeriesStatusClass(seriesOption)">
                                     {{ getSeriesStatusIcon(seriesOption) }}
                                   </mat-icon>
-                                  <span class="availability-count">{{ seriesOption.available }} available</span>
+                                  <span class="availability-count">{{ getAvailableBatches(seriesOption.available) }} batch{{ getAvailableBatches(seriesOption.available) !== 1 ? 'es' : '' }} available</span>
                                 </span>
                               </div>
                             </div>
@@ -250,23 +263,53 @@
                       </mat-form-field>
                     </div>
 
-                    <!-- Quantity Input -->
-                    <div class="quantity-section">
-                      <mat-form-field appearance="fill" class="quantity-field">
-                        <mat-label>Quantity Required</mat-label>
-                        <input
-                          matInput
-                          type="number"
-                          min="0"
-                          [value]="getQuantity(denom.value)"
-                          (input)="updateQuantity(denom.value, +$any($event.target).value)"
+                    <!-- Batch Input -->
+                    <div class="batch-section">
+                      <div class="batch-label">
+                        <span>Batches Required</span>
+                        <small>(1 batch = 100 notes)</small>
+                      </div>
+
+                      <div class="batch-controls">
+                        <button
+                          mat-icon-button
+                          type="button"
+                          (click)="decrementBatch(denom.value)"
+                          [disabled]="getBatchCount(denom.value) === 0 || getInventoryStatus(denom.value) === InventoryStatus.OUT_OF_STOCK"
+                          class="batch-btn decrement-btn">
+                          <mat-icon>remove</mat-icon>
+                        </button>
+
+                        <mat-form-field appearance="fill" class="batch-field">
+                          <input
+                            matInput
+                            type="number"
+                            min="0"
+                            [value]="getBatchCount(denom.value)"
+                            (input)="updateBatchCount(denom.value, +$any($event.target).value)"
+                            [disabled]="getInventoryStatus(denom.value) === InventoryStatus.OUT_OF_STOCK"
+                            placeholder="0">
+                        </mat-form-field>
+
+                        <button
+                          mat-icon-button
+                          type="button"
+                          (click)="incrementBatch(denom.value)"
                           [disabled]="getInventoryStatus(denom.value) === InventoryStatus.OUT_OF_STOCK"
-                          placeholder="0">
-                        <mat-icon matSuffix>format_list_numbered</mat-icon>
-                      </mat-form-field>
-                      <div class="amount-display">
-                        <span class="amount-label">Total:</span>
-                        <span class="amount-value">{{ formatCurrency(denom.value * getQuantity(denom.value)) }}</span>
+                          class="batch-btn increment-btn">
+                          <mat-icon>add</mat-icon>
+                        </button>
+                      </div>
+
+                      <div class="batch-summary">
+                        <div class="notes-count">
+                          <span class="notes-label">Notes:</span>
+                          <span class="notes-value">{{ getQuantity(denom.value) }}</span>
+                        </div>
+                        <div class="amount-display">
+                          <span class="amount-label">Total:</span>
+                          <span class="amount-value">{{ formatCurrency(denom.value * getQuantity(denom.value)) }}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -325,17 +368,17 @@
                     <div class="option-image-container">
                       <img
                         src="assets/images/Money/Dye Stained.jpg"
-                        alt="Security Dye Pack"
+                        alt="Dye Pack"
                         class="option-image"
                         loading="lazy"
                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                       <div class="image-fallback" style="display: none;">
-                        <mat-icon class="fallback-icon security-icon">security</mat-icon>
+                        <mat-icon class="fallback-icon dye-pack-icon">report_problem</mat-icon>
                       </div>
                     </div>
                     <div class="option-info">
-                      <h4>Security Dye Pack</h4>
-                      <p>Enhanced security protection for cash transport</p>
+                      <h4>Dye Pack</h4>
+                      <p>Money destroyed by ink</p>
                     </div>
                     <div class="option-toggle-container">
                       <mat-slide-toggle
@@ -351,7 +394,7 @@
                   <div class="option-content">
                     <div class="option-confirmation" *ngIf="dyePackRequired">
                       <mat-icon class="confirm-icon">check_circle</mat-icon>
-                      <span>Security dye pack will be included</span>
+                      <span>Dye pack will be included</span>
                     </div>
                   </div>
                 </div>
@@ -373,7 +416,7 @@
                     <span>+ Coins</span>
                   </div>
                   <div class="extra-item" *ngIf="dyePackRequired">
-                    <mat-icon class="security-icon">security</mat-icon>
+                    <mat-icon class="dye-pack-icon">report_problem</mat-icon>
                     <span>+ Dye Pack</span>
                   </div>
                 </div>
@@ -480,7 +523,7 @@
                         </div>
                         <div class="item-details">
                           <span class="item-name">{{ note.denomination | currency:'ZAR':'symbol':'1.0-0' }} Bank Notes</span>
-                          <span class="item-quantity">Quantity: {{ note.quantity }}</span>
+                          <span class="item-quantity">{{ getBatchCount(note.denomination) }} batches ({{ note.quantity }} notes)</span>
                         </div>
                         <div class="item-amount">{{ formatCurrency(note.denomination * note.quantity) }}</div>
                       </div>
@@ -503,12 +546,12 @@
 
                     <div class="summary-item" *ngIf="dyePackRequired">
                       <div class="item-content">
-                        <div class="item-icon-wrapper security-wrapper">
-                          <mat-icon class="item-icon security-icon">security</mat-icon>
+                        <div class="item-icon-wrapper dye-pack-wrapper">
+                          <mat-icon class="item-icon dye-pack-icon">report_problem</mat-icon>
                         </div>
                         <div class="item-details">
-                          <span class="item-name">Security Dye Pack</span>
-                          <span class="item-quantity">Enhanced protection</span>
+                          <span class="item-name">Dye Pack</span>
+                          <span class="item-quantity">Money destroyed by ink</span>
                         </div>
                         <div class="item-status">
                           <mat-icon class="status-icon">check_circle</mat-icon>

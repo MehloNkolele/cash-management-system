@@ -24,6 +24,7 @@ import { CashRequest, RequestStatus } from '../../models/cash-request.model';
 import { InventorySummary, LowStockAlert, AlertSeverity, NoteSeries, NoteDenomination } from '../../models/inventory.model';
 import { SystemLog, LogSeverity } from '../../models/system-log.model';
 import { Notification } from '../../models/notification.model';
+import { Issue, IssueCategory, IssueStatus, IssuePriority, IssueSummary, ISSUE_CATEGORY_LABELS, ISSUE_PRIORITY_LABELS, ISSUE_STATUS_LABELS } from '../../models/issue.model';
 
 // Services
 import { UserService } from '../../services/user.service';
@@ -31,7 +32,7 @@ import { CashRequestService } from '../../services/cash-request.service';
 import { InventoryService } from '../../services/inventory.service';
 import { SystemLogService } from '../../services/system-log.service';
 import { NotificationService } from '../../services/notification.service';
-import { OverdueMonitoringService } from '../../services/overdue-monitoring.service';
+import { IssueService } from '../../services/issue.service';
 
 // Components
 import { NotificationPanelComponent } from '../notification-panel/notification-panel.component';
@@ -39,7 +40,6 @@ import { AddCashModalComponent } from '../add-cash-modal/add-cash-modal.componen
 import { ProcessReturnsModalComponent } from '../process-returns-modal/process-returns-modal.component';
 import { SystemLogsModalComponent } from '../system-logs-modal/system-logs-modal.component';
 import { LogDetailsModalComponent } from '../log-details-modal/log-details-modal.component';
-import { OverdueAlertComponent } from '../overdue-alert/overdue-alert.component';
 
 @Component({
   selector: 'app-manager-dashboard',
@@ -59,8 +59,7 @@ import { OverdueAlertComponent } from '../overdue-alert/overdue-alert.component'
     MatProgressBarModule,
     MatSnackBarModule,
     MatDialogModule,
-    NotificationPanelComponent,
-    OverdueAlertComponent
+    NotificationPanelComponent
   ],
   templateUrl: './manager-dashboard.component.html',
   styleUrls: ['./manager-dashboard.component.scss']
@@ -81,6 +80,11 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
   notifications: Notification[] = [];
   unreadNotificationCount = 0;
 
+  // Issue Management Data
+  allIssues: Issue[] = [];
+  openIssues: Issue[] = [];
+  issueSummary: IssueSummary | null = null;
+
   // Statistics
   totalInventoryValue = 0;
   totalActiveRequests = 0;
@@ -90,6 +94,12 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
   requestColumns: string[] = ['id', 'requester', 'amount', 'status', 'deadline', 'actions'];
   alertColumns: string[] = ['series', 'denomination', 'quantity', 'threshold', 'severity'];
   logColumns: string[] = ['timestamp', 'type', 'severity', 'message'];
+  issueColumns: string[] = ['title', 'category', 'priority', 'status', 'reportedBy', 'reportedAt', 'actions'];
+
+  // Expose label constants to template
+  ISSUE_CATEGORY_LABELS = ISSUE_CATEGORY_LABELS;
+  ISSUE_PRIORITY_LABELS = ISSUE_PRIORITY_LABELS;
+  ISSUE_STATUS_LABELS = ISSUE_STATUS_LABELS;
 
   constructor(
     private userService: UserService,
@@ -97,7 +107,7 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
     private inventoryService: InventoryService,
     private systemLogService: SystemLogService,
     private notificationService: NotificationService,
-    private overdueMonitoringService: OverdueMonitoringService,
+    private issueService: IssueService,
     private router: Router,
     private snackBar: MatSnackBar,
     private dialog: MatDialog
@@ -160,6 +170,7 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
     this.loadRequestData();
     this.loadLogData();
     this.loadNotifications();
+    this.loadIssueData();
   }
 
   private loadInventoryData(): void {
@@ -202,8 +213,14 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
   private loadNotifications(): void {
     this.notifications = this.notificationService.getNotificationsForUser(this.currentUser?.id || '');
     this.unreadNotificationCount = this.notifications.filter(n => !n.isRead).length;
+  }
 
-
+  private loadIssueData(): void {
+    this.allIssues = this.issueService.getAllIssues();
+    this.openIssues = this.allIssues.filter(issue =>
+      issue.status === IssueStatus.OPEN || issue.status === IssueStatus.IN_PROGRESS
+    );
+    this.issueSummary = this.issueService.getIssueSummary();
   }
 
   // Action Methods
@@ -222,13 +239,18 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
   }
 
   onProcessReturns(): void {
+    console.log('Opening Process Returns modal...');
+
     const dialogRef = this.dialog.open(ProcessReturnsModalComponent, {
       width: '1000px',
       maxWidth: '90vw',
       disableClose: true
     });
 
+    console.log('Process Returns modal opened');
+
     dialogRef.afterClosed().subscribe(result => {
+      console.log('Process Returns modal closed with result:', result);
       if (result?.success) {
         this.loadDashboardData();
         this.snackBar.open(`Successfully processed ${result.processed} return(s)`, 'Close', { duration: 3000 });
@@ -319,15 +341,16 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
       if (updatedRequest) {
         this.systemLogService.logManagerAction(
           'Issue Cash',
-          `Issued cash for request ${request.id} to ${request.requesterName} - ${this.formatCurrency(this.calculateRequestTotal(request))}`
+          `Issued cash for request ${request.id} to ${request.requesterName} - ${this.formatCurrency(this.calculateRequestTotal(request))} - Inventory updated`
         );
 
-        this.snackBar.open('Cash issued successfully', 'Close', { duration: 3000 });
+        this.snackBar.open('Cash issued successfully and inventory updated!', 'Close', { duration: 3000 });
         this.loadRequestData();
       }
     } catch (error) {
       console.error('Error issuing cash:', error);
-      this.snackBar.open('Error issuing cash', 'Close', { duration: 3000 });
+      const errorMessage = error instanceof Error ? error.message : 'Error issuing cash';
+      this.snackBar.open(errorMessage, 'Close', { duration: 5000 });
     }
   }
 
@@ -390,6 +413,67 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
   onRefreshData(): void {
     this.loadDashboardData();
     this.snackBar.open('Dashboard data refreshed', 'Close', { duration: 2000 });
+  }
+
+  // Issue Management Methods
+  onResolveIssue(issue: Issue): void {
+    if (!this.currentUser) return;
+
+    try {
+      const updatedIssue = this.issueService.updateIssue(issue.id, {
+        status: IssueStatus.RESOLVED,
+        resolvedBy: this.currentUser.id,
+        resolvedByName: this.currentUser.fullName,
+        resolvedAt: new Date()
+      });
+
+      if (updatedIssue) {
+        this.systemLogService.logManagerAction(
+          'Resolve Issue',
+          `Resolved issue: ${issue.title} (reported by ${issue.reportedByName})`
+        );
+
+        // Notify the reporter
+        this.notificationService.notifyIssueResolved(
+          issue.id,
+          issue.title,
+          this.currentUser.fullName,
+          issue.reportedBy
+        );
+
+        this.snackBar.open('Issue resolved successfully', 'Close', { duration: 3000 });
+        this.loadIssueData();
+      }
+    } catch (error) {
+      console.error('Error resolving issue:', error);
+      this.snackBar.open('Error resolving issue', 'Close', { duration: 3000 });
+    }
+  }
+
+  onUpdateIssueStatus(issue: Issue, newStatus: string): void {
+    if (!this.currentUser) return;
+
+    // Convert string to enum
+    const statusEnum = newStatus as IssueStatus;
+
+    try {
+      const updatedIssue = this.issueService.updateIssue(issue.id, {
+        status: statusEnum
+      });
+
+      if (updatedIssue) {
+        this.systemLogService.logManagerAction(
+          'Update Issue Status',
+          `Updated issue "${issue.title}" status to ${ISSUE_STATUS_LABELS[statusEnum]}`
+        );
+
+        this.snackBar.open(`Issue status updated to ${ISSUE_STATUS_LABELS[statusEnum]}`, 'Close', { duration: 3000 });
+        this.loadIssueData();
+      }
+    } catch (error) {
+      console.error('Error updating issue status:', error);
+      this.snackBar.open('Error updating issue status', 'Close', { duration: 3000 });
+    }
   }
 
   // Notification Methods
@@ -512,6 +596,95 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
 
   calculateRequestTotal(request: CashRequest): number {
     return request.bankNotes.reduce((sum, note) => sum + (note.denomination * note.quantity), 0);
+  }
+
+  // Issue Helper Methods
+  getIssueStatusClass(status: IssueStatus): string {
+    return `issue-status-${status.toLowerCase()}`;
+  }
+
+  getIssueStatusColor(status: IssueStatus): string {
+    switch (status) {
+      case IssueStatus.OPEN:
+        return 'warn';
+      case IssueStatus.IN_PROGRESS:
+        return 'accent';
+      case IssueStatus.RESOLVED:
+        return 'primary';
+      case IssueStatus.CLOSED:
+        return '';
+      default:
+        return '';
+    }
+  }
+
+  getIssueStatusIcon(status: IssueStatus): string {
+    switch (status) {
+      case IssueStatus.OPEN:
+        return 'error_outline';
+      case IssueStatus.IN_PROGRESS:
+        return 'schedule';
+      case IssueStatus.RESOLVED:
+        return 'check_circle';
+      case IssueStatus.CLOSED:
+        return 'done_all';
+      default:
+        return 'help';
+    }
+  }
+
+  getIssuePriorityClass(priority: IssuePriority): string {
+    return `issue-priority-${priority.toLowerCase()}`;
+  }
+
+  getIssuePriorityColor(priority: IssuePriority): string {
+    switch (priority) {
+      case IssuePriority.CRITICAL:
+        return 'warn';
+      case IssuePriority.HIGH:
+        return 'accent';
+      case IssuePriority.MEDIUM:
+        return 'primary';
+      case IssuePriority.LOW:
+        return '';
+      default:
+        return '';
+    }
+  }
+
+  getIssuePriorityIcon(priority: IssuePriority): string {
+    switch (priority) {
+      case IssuePriority.CRITICAL:
+        return 'error';
+      case IssuePriority.HIGH:
+        return 'warning';
+      case IssuePriority.MEDIUM:
+        return 'info';
+      case IssuePriority.LOW:
+        return 'low_priority';
+      default:
+        return 'help';
+    }
+  }
+
+  canResolveIssue(issue: Issue): boolean {
+    return issue.status === IssueStatus.OPEN || issue.status === IssueStatus.IN_PROGRESS;
+  }
+
+  canUpdateIssueStatus(issue: Issue): boolean {
+    return issue.status !== IssueStatus.CLOSED;
+  }
+
+  getIssueCategoryLabel(category: IssueCategory): string {
+    return ISSUE_CATEGORY_LABELS[category] || 'Unknown';
+  }
+
+  getIssuePriorityLabel(priority: IssuePriority): string {
+    return ISSUE_PRIORITY_LABELS[priority] || 'Unknown';
+  }
+
+  getIssueStatusLabel(status: IssueStatus): string {
+    return ISSUE_STATUS_LABELS[status] || 'Unknown';
   }
 
   // Tab Navigation Methods

@@ -1,0 +1,118 @@
+<div class="report-issue-modal">
+  <h2 mat-dialog-title>
+    <mat-icon>report_problem</mat-icon>
+    Report Issue
+  </h2>
+
+  <mat-dialog-content>
+    <form [formGroup]="issueForm" class="issue-form">
+      <!-- Associated Request Info -->
+      <div class="request-info" *ngIf="data?.request">
+        <div class="info-header">
+          <mat-icon>link</mat-icon>
+          <span>Associated Cash Request</span>
+        </div>
+        <div class="request-details">
+          <span class="request-id">{{ data.request?.id }}</span>
+          <span class="requester">{{ data.request?.requesterName }}</span>
+          <span class="amount">{{ data.request ? formatCurrency(calculateTotal(data.request)) : '' }}</span>
+        </div>
+      </div>
+
+      <!-- Issue Title -->
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Issue Title</mat-label>
+        <input matInput formControlName="title" placeholder="Brief description of the issue">
+        <mat-error *ngIf="issueForm.get('title')?.hasError('required')">
+          Title is required
+        </mat-error>
+        <mat-error *ngIf="issueForm.get('title')?.hasError('maxlength')">
+          Title cannot exceed 100 characters
+        </mat-error>
+      </mat-form-field>
+
+      <!-- Issue Category -->
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Issue Category</mat-label>
+        <mat-select formControlName="category">
+          <mat-option *ngFor="let category of categories" [value]="category.value">
+            <div class="category-option">
+              <mat-icon>{{ getCategoryIcon(category.value) }}</mat-icon>
+              <span>{{ category.label }}</span>
+            </div>
+          </mat-option>
+        </mat-select>
+        <mat-error *ngIf="issueForm.get('category')?.hasError('required')">
+          Category is required
+        </mat-error>
+      </mat-form-field>
+
+      <!-- Issue Priority -->
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Priority Level</mat-label>
+        <mat-select formControlName="priority">
+          <mat-option *ngFor="let priority of priorities" [value]="priority.value">
+            <div class="priority-option" [class]="'priority-' + priority.value">
+              <mat-icon>{{ getPriorityIcon(priority.value) }}</mat-icon>
+              <span>{{ priority.label }}</span>
+            </div>
+          </mat-option>
+        </mat-select>
+        <mat-error *ngIf="issueForm.get('priority')?.hasError('required')">
+          Priority is required
+        </mat-error>
+      </mat-form-field>
+
+      <!-- Issue Description -->
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Detailed Description</mat-label>
+        <textarea
+          matInput
+          formControlName="description"
+          rows="4"
+          placeholder="Provide detailed information about the issue, including what happened, when it occurred, and any relevant circumstances...">
+        </textarea>
+        <mat-hint>Be as specific as possible to help managers understand and resolve the issue</mat-hint>
+        <mat-error *ngIf="issueForm.get('description')?.hasError('required')">
+          Description is required
+        </mat-error>
+        <mat-error *ngIf="issueForm.get('description')?.hasError('minlength')">
+          Description must be at least 20 characters
+        </mat-error>
+      </mat-form-field>
+
+      <!-- Priority Guidelines -->
+      <div class="priority-guidelines">
+        <h4>Priority Guidelines:</h4>
+        <div class="guideline-item critical">
+          <mat-icon>error</mat-icon>
+          <strong>Critical:</strong> Security breaches, large discrepancies, safety concerns
+        </div>
+        <div class="guideline-item high">
+          <mat-icon>warning</mat-icon>
+          <strong>High:</strong> Missing notes, equipment failures, process violations
+        </div>
+        <div class="guideline-item medium">
+          <mat-icon>info</mat-icon>
+          <strong>Medium:</strong> Minor discrepancies, damaged notes
+        </div>
+        <div class="guideline-item low">
+          <mat-icon>help</mat-icon>
+          <strong>Low:</strong> General questions, minor process improvements
+        </div>
+      </div>
+    </form>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button (click)="onCancel()">Cancel</button>
+    <button
+      mat-raised-button
+      color="warn"
+      (click)="onSubmit()"
+      [disabled]="issueForm.invalid || isSubmitting">
+      <mat-icon>send</mat-icon>
+      {{ isSubmitting ? 'Reporting...' : 'Report Issue' }}
+    </button>
+  </mat-dialog-actions>
+</div>
